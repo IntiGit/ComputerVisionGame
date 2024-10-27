@@ -7,8 +7,6 @@ import time
 ###################################################
 
 cap = cv2.VideoCapture("Assets/traffic.mp4")
-fps = cap.get(cv2.CAP_PROP_FPS)
-frame_delay = 1 / fps
 subtractor = cv2.createBackgroundSubtractorKNN()
 
 while True:
