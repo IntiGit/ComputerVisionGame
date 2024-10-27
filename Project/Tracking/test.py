@@ -6,7 +6,7 @@ import time
 # In dieser Datei die Methoden zum Tracken testen #
 ###################################################
 
-cap = cv2.VideoCapture("Assets/traffic.mp4")
+cap = cv2.VideoCapture("Assets/Videos/traffic.mp4")
 subtractor = cv2.createBackgroundSubtractorKNN()
 
 while True:
