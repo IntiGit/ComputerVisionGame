@@ -8,38 +8,42 @@ from Player import Player
 # In dieser Datei das Spiel starten durch die main Methode #
 ############################################################
 
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 720
+background_image = pygame.image.load("Assets/background1.jpg")
+SCREEN_WIDTH = background_image.get_width()
+SCREEN_HEIGHT = background_image.get_height()
 SCREEN = [SCREEN_WIDTH, SCREEN_HEIGHT]
+useCamera = False
+
+
+def initCamera(screen, useCam=False):
+    if useCam:
+        cap = cv2.VideoCapture(0)
+    else:
+        cap = cv2.VideoCapture("")
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, screen.get_width())
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, screen.get_height())
+    return cap
+
+
+def getCameraFrame(cap):
+    ret, cameraFrame = cap.read()
+    imgRGB = cv2.cvtColor(cameraFrame, cv2.COLOR_BGR2RGB)
+    imgRGB = np.rot90(imgRGB)
+    gameFrame = pygame.surfarray.make_surface(imgRGB).convert()
+    return gameFrame
 
 
 def main():
-
-    # init pygame
     pygame.init()
-
-    # set display size and caption
     screen = pygame.display.set_mode(SCREEN)
     pygame.display.set_caption("Computer Vision Game")
-
-    # init game clock
     fps = 30
     clock = pygame.time.Clock()
+    cap = initCamera(screen)
 
-    # opencv - init webcam capture
-    cap = cv2.VideoCapture(0)
-    # set width & height to screen size
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, screen.get_width())
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, screen.get_height())
+    playerSprite = pygame.image.load("Assets/playerSprite.png")
+    player = Player(screen.get_width() / 2, screen.get_height() - playerSprite.get_height(), playerSprite)
 
-    # init player
-    player = Player(screen.get_width() / 2, screen.get_height() / 2)
-
-    # example variable for game score
-    gameScore = 0
-
-    # -------------
-    # -- main loop
     running = True
     while running:
         for event in pygame.event.get():
@@ -50,33 +54,17 @@ def main():
                 if event.key == pygame.K_ESCAPE:
                     running = False
 
-        # -- opencv & viz image
-        ret, cameraFrame = cap.read()
-        imgRGB = cv2.cvtColor(cameraFrame, cv2.COLOR_BGR2RGB)
-        # image needs to be rotated for pygame
-        imgRGB = np.rot90(imgRGB)
-        # convert image to pygame and visualize
-        gameFrame = pygame.surfarray.make_surface(imgRGB).convert()
-        screen.blit(gameFrame, (0, 0))
+        screen.blit(background_image, (0, 0))
 
-        # -- update & draw object on screen
-        player.update(pygame.key.get_pressed())
-        screen.blit(player.surf, player.rect)
+        if useCamera:
+            screen.blit(getCameraFrame(cap), (0, 0))
 
-        # -- add Text on screen (e.g. score)
-        textFont = pygame.font.SysFont("arial", 26)
-        textExample = textFont.render(f'Score: {gameScore}', True, (255, 0, 0))
-        screen.blit(textExample, (20, 20))
+        player.update(pygame.key.get_pressed(), screen)
 
-        # update entire screen
         pygame.display.update()
-        # set clock
         clock.tick(fps)
 
-    # quit game
     pygame.quit()
-
-    # release capture
     cap.release()
 
 
