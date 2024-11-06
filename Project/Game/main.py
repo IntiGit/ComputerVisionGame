@@ -20,10 +20,9 @@ SPAWN_INTERVAL = 1000
 
 
 def initCamera(screen, useCam=False):
+    cap = cv2.VideoCapture("")
     if useCam:
         cap = cv2.VideoCapture(0)
-    else:
-        cap = cv2.VideoCapture("")
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, screen.get_width())
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, screen.get_height())
     return cap
@@ -67,19 +66,18 @@ def main():
         if len(fruits) < MAX_FRUITS and (current_time - last_spawn_time) > SPAWN_INTERVAL:
             fruit_type = random.choice(['Assets/banana', 'Assets/apple'])
             speed = random.randint(2, 5)
-            
+
             new_fruit = Fruit(fruit_type, speed, screen)
             fruits.append(new_fruit)
-        
-           # Update the last spawn  time
+
+            # Update the last spawn  time
             last_spawn_time = current_time
 
         # Update and draw each fruit
         for fruit in fruits:
-            fruit.update_pos_Y() 
-            fruit.draw(screen) 
+            fruit.update_pos_Y()
+            fruit.draw(screen)
 
-            
         if useCamera:
             screen.blit(getCameraFrame(cap), (0, 0))
 
