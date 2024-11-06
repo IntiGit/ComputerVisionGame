@@ -3,7 +3,7 @@ import cv2
 import pygame
 import random
 from Fruit import Fruit
-
+from ScoreBoard import ScoreBoard
 from Player import Player
 
 ############################################################
@@ -18,6 +18,11 @@ useCamera = False
 MAX_FRUITS = 3
 SPAWN_INTERVAL = 1000
 
+numTeams = 2
+playersPerTeam = 1
+
+playerSprites = [pygame.image.load("Assets/playerSpriteRed.png"),
+                 pygame.image.load("Assets/playerSpriteYellow.png")]
 
 def initCamera(screen, useCam=False):
     cap = cv2.VideoCapture("")
@@ -44,11 +49,16 @@ def main():
     clock = pygame.time.Clock()
     cap = initCamera(screen)
 
-    playerSprite = pygame.image.load("Assets/playerSprite.png")
-    player = Player(screen.get_width() / 2, screen.get_height() - playerSprite.get_height(), playerSprite)
+    players = []
+    for i in range(numTeams * playersPerTeam):
+        sprite = playerSprites[i]
+        posX = (i + 1) * (screen.get_width() // (numTeams * playersPerTeam + 1)) - (sprite.get_width() // 2)
+        players.append(Player(posX, screen.get_height() - sprite.get_height(), sprite,  i // playersPerTeam))
 
     fruits = []
     last_spawn_time = pygame.time.get_ticks()
+
+    scoreBoard = ScoreBoard(numTeams)
 
     running = True
     while running:
@@ -78,10 +88,13 @@ def main():
             fruit.update_pos_Y()
             fruit.draw(screen)
 
+        scoreBoard.draw(screen)
+
         if useCamera:
             screen.blit(getCameraFrame(cap), (0, 0))
 
-        player.update(pygame.key.get_pressed(), screen)
+        for player in players:
+            player.update(pygame.key.get_pressed(), screen)
 
         pygame.display.update()
         clock.tick(fps)

@@ -5,7 +5,7 @@ import numpy as np
 class Player(pygame.sprite.Sprite):
     # -----------------------------------------------------------
     # init class
-    def __init__(self, posX, posY, sprite):
+    def __init__(self, posX, posY, sprite, team):
         super(Player, self).__init__()
         self.sprite = pygame.transform.flip(sprite, True, False)
         self.rect = self.sprite.get_rect()
