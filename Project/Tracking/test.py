@@ -26,7 +26,7 @@ subtractors = [("MOG2", cv2.createBackgroundSubtractorMOG2(history=170, varThres
                ("GMG", cv2.bgsegm.createBackgroundSubtractorGMG(initializationFrames=50, decisionThreshold=0.7)),
                ("GSOC", cv2.bgsegm.createBackgroundSubtractorGSOC(mc=1, nSamples=20, replaceRate=0.01)),
                ("LSBP", cv2.bgsegm.createBackgroundSubtractorLSBP(mc=1, Tlower=2, Tupper=32))]
-subtractorIndex = 0
+subtractorIndex = 2
 
 
 def main():
