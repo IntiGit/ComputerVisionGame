@@ -13,6 +13,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.y = posY
         self.speed = 10
         self.flip = False
+        self.team = team
 
     def draw(self, screen):
         image_to_draw = pygame.transform.flip(self.sprite, self.flip, False)
@@ -30,3 +31,14 @@ class Player(pygame.sprite.Sprite):
             self.flip = True
         self.rect.x = max(0, min(screen.get_width() - self.rect.width, self.rect.x))
         self.draw(screen)
+
+    def checkCollision(self, fruits):
+        scoreChange = 0
+        for i, fruit in enumerate(fruits):
+            if self.rect.colliderect(fruit.rect):
+                if fruit.fruit_type == self.team:
+                    scoreChange = 1
+                else:
+                    scoreChange = -1
+            return scoreChange, i
+        return scoreChange, -1

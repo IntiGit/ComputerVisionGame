@@ -53,7 +53,12 @@ def main():
     for i in range(numTeams * playersPerTeam):
         sprite = playerSprites[i]
         posX = (i + 1) * (screen.get_width() // (numTeams * playersPerTeam + 1)) - (sprite.get_width() // 2)
-        players.append(Player(posX, screen.get_height() - sprite.get_height(), sprite,  i // playersPerTeam))
+        players.append(
+            Player(
+                posX,
+                screen.get_height() - sprite.get_height(),
+                sprite,
+                "apple" if i // playersPerTeam == 0 else "banana"))
 
     fruits = []
     last_spawn_time = pygame.time.get_ticks()
@@ -74,7 +79,7 @@ def main():
         screen.blit(background_image, (0, 0))
 
         if len(fruits) < MAX_FRUITS and (current_time - last_spawn_time) > SPAWN_INTERVAL:
-            fruit_type = random.choice(['Assets/banana', 'Assets/apple'])
+            fruit_type = random.choice(['banana', 'apple'])
             speed = random.randint(2, 5)
 
             new_fruit = Fruit(fruit_type, speed, screen)
@@ -95,6 +100,11 @@ def main():
 
         for player in players:
             player.update(pygame.key.get_pressed(), screen)
+            scoreChange, fruitIndex = player.checkCollision(fruits)
+            if scoreChange != 0:
+                playerIndex = 0 if player.team == "apple" else 1
+                scoreBoard.changeScore(playerIndex, scoreChange)
+                fruits.pop(fruitIndex)
 
         pygame.display.update()
         clock.tick(fps)

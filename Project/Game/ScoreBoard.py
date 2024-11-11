@@ -21,10 +21,10 @@ class ScoreBoard:
                 score_text = self.font.render(f"Team Banana : {score} ", True, (255, 255, 0))
             screen.blit(score_text, (x - i * (score_text.get_width() + 100), y))
 
-    def increase_score(self, player_index, points=1):
+    def changeScore(self, player_index, points):
         if 0 <= player_index < len(self.points):
             self.points[player_index] += points
 
-    def reset_scores(self):
+    def resetScores(self):
         # Alle Scores auf 0 zurücksetzen
         self.points = [0] * len(self.points)
