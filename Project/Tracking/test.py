@@ -19,6 +19,43 @@ def applySubtractor(frame, subtractor):
     return subtractor.apply(frame)
 
 
+def applyAndSave(input_video_path, output_video_path, subtractor):
+    # Video einlesen
+    cap = cv2.VideoCapture(input_video_path)
+
+    # Überprüfen, ob das Video erfolgreich geladen wurde
+    if not cap.isOpened():
+        print("Fehler: Konnte das Video nicht laden.")
+        return
+
+    # Videoeigenschaften (Größe, FPS) holen
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+
+    # VideoWriter initialisieren, um das Ergebnisvideo zu speichern
+    fourcc = 0x7634706d
+    out = cv2.VideoWriter(output_video_path, int(fourcc), float(fps), (frame_width, frame_height), False)
+
+    # Frame für Frame durch das Video iterieren
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        # Hintergrundsubtraktion anwenden
+        fg_mask = subtractor.apply(frame)
+
+        # Das maskierte Bild ins Ausgabevideo schreiben
+        out.write(fg_mask)
+
+    # Ressourcen freigeben
+    cap.release()
+    out.release()
+    print("Das Ergebnisvideo wurde erfolgreich gespeichert.")
+
+
+
 subtractors = [("MOG2", cv2.createBackgroundSubtractorMOG2(history=170, varThreshold=95, detectShadows=False)),
                ("KNN", cv2.createBackgroundSubtractorKNN(history=500, dist2Threshold=400, detectShadows=True)),
                ("MOG", cv2.bgsegm.createBackgroundSubtractorMOG(history=170, nmixtures=5, backgroundRatio=0.5, noiseSigma=1.5)),
@@ -27,6 +64,8 @@ subtractors = [("MOG2", cv2.createBackgroundSubtractorMOG2(history=170, varThres
                ("GSOC", cv2.bgsegm.createBackgroundSubtractorGSOC(mc=1, nSamples=20, replaceRate=0.01)),
                ("LSBP", cv2.bgsegm.createBackgroundSubtractorLSBP(mc=1, Tlower=2, Tupper=32))]
 subtractorIndex = 0
+
+
 
 
 def main():
@@ -60,4 +99,7 @@ def main():
     cv2.destroyAllWindows()
 
 
-main()
+#main()
+input_video_path = 'Assets/Videos/traffic.mp4'
+output_video_path = 'Assets/Results/_X_.mp4'
+applyAndSave(input_video_path, output_video_path,  subtractors[subtractorIndex][1])
