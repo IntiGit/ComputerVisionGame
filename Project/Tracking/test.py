@@ -7,7 +7,6 @@ import time
 # In dieser Datei die Methoden zum Tracken testen #
 ###################################################
 
-
 def postProccesing(frame):
     _, newframe = cv2.threshold(frame, 200, 255, cv2.THRESH_BINARY)
     newframe = cv2.erode(newframe, None, iterations=1)
@@ -19,57 +18,67 @@ def applySubtractor(frame, subtractor):
     return subtractor.apply(frame)
 
 
-def applyAndSave(input_video_path, output_video_path, subtractor):
-    # Video einlesen
-    cap = cv2.VideoCapture(input_video_path)
+# Subtraktoren definieren
+subtractors = [
+    ("MOG2", cv2.createBackgroundSubtractorMOG2(history=170, varThreshold=95, detectShadows=False)),
+    ("KNN", cv2.createBackgroundSubtractorKNN(history=500, dist2Threshold=400, detectShadows=False)),
+    ("MOG", cv2.bgsegm.createBackgroundSubtractorMOG(history=170, nmixtures=5, backgroundRatio=0.5, noiseSigma=1.5)),
+    ("CNT", cv2.bgsegm.createBackgroundSubtractorCNT(minPixelStability=15, maxPixelStability=60, isParallel=True)),
+    ("GSOC", cv2.bgsegm.createBackgroundSubtractorGSOC(mc=10, nSamples=10, replaceRate=0.01))
+]
+subtractorIndex = 2  # Auswahl des Subtraktors
+sub = subtractors[subtractorIndex][1]
 
-    # Überprüfen, ob das Video erfolgreich geladen wurde
-    if not cap.isOpened():
-        print("Fehler: Konnte das Video nicht laden.")
-        return
 
-    # Videoeigenschaften (Größe, FPS) holen
+# Trackbar-Update-Funktionen
+def update_history(val):
+    sub.setHistory(val)
+
+
+def update_varThreshold(val):
+    sub.setVarThreshold(val)
+
+
+def update_shadowThreshold(val):
+    sub.setShadowThreshold(val)
+
+
+
+
+#def update_complexityReductionThreshold(val):
+ #   sub.setComplexityReductionThreshold(val / 10.0)  # Teilt durch 10 für eine feinere Anpassung (MOG2)
+
+
+def update_nMixtures(val):
+    sub.setNMixtures(val)
+
+
+def update_detectShadows(val):
+    sub.setDetectShadows(val == 1)
+
+
+# GUI für Trackbars zur dynamischen Anpassung
+cv2.namedWindow("BS Adjustments")
+cv2.createTrackbar("History", "BS Adjustments", 126, 500, update_history)
+cv2.createTrackbar("VarThreshold", "BS Adjustments", 30, 255, update_varThreshold)
+cv2.createTrackbar("Detect Shadows", "BS Adjustments", 0, 1, update_detectShadows)
+cv2.createTrackbar("Shadow Threshold", "BS Adjustments", 0, 100, update_shadowThreshold)
+cv2.createTrackbar("Complexity Reduction", "BS Adjustments", 30, 100, update_complexityReductionThreshold)
+cv2.createTrackbar("N Mixtures", "BS Adjustments", 8, 10, update_nMixtures)
+
+
+def main(output_video_path="adjustments_output.mp4"):
+    cap = cv2.VideoCapture("RoomWindow_3.mp4")
+
+    # Videoeigenschaften holen
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = cap.get(cv2.CAP_PROP_FPS)
 
-    # VideoWriter initialisieren, um das Ergebnisvideo zu speichern
-    fourcc = 0x7634706d
-    out = cv2.VideoWriter(output_video_path, int(fourcc), float(fps), (frame_width, frame_height), False)
+    # VideoWriter für Live-Resultate initialisieren
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    #out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height), False)
 
-    # Frame für Frame durch das Video iterieren
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        # Hintergrundsubtraktion anwenden
-        fg_mask = subtractor.apply(frame)
-
-        # Das maskierte Bild ins Ausgabevideo schreiben
-        out.write(fg_mask)
-
-    # Ressourcen freigeben
-    cap.release()
-    out.release()
-    print("Das Ergebnisvideo wurde erfolgreich gespeichert.")
-
-
-
-subtractors = [("MOG2", cv2.createBackgroundSubtractorMOG2(history=170, varThreshold=95, detectShadows=False)),
-               ("KNN", cv2.createBackgroundSubtractorKNN(history=500, dist2Threshold=400, detectShadows=True)),
-               ("MOG", cv2.bgsegm.createBackgroundSubtractorMOG(history=170, nmixtures=5, backgroundRatio=0.5, noiseSigma=1.5)),
-               ("CNT", cv2.bgsegm.createBackgroundSubtractorCNT(minPixelStability=15, maxPixelStability=60, isParallel=True)),
-               ("GMG", cv2.bgsegm.createBackgroundSubtractorGMG(initializationFrames=50, decisionThreshold=0.7)),
-               ("GSOC", cv2.bgsegm.createBackgroundSubtractorGSOC(mc=10, nSamples=10, replaceRate=0.01)),
-               ("LSBP", cv2.bgsegm.createBackgroundSubtractorLSBP(mc=10, Tlower=2, Tupper=32))]
-subtractorIndex = 6
-
-
-
-
-def main():
-    cap = cv2.VideoCapture("film.mov")
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -79,27 +88,28 @@ def main():
         # FPS calculation
         start_time = time.time()
 
-        # Apply background subtraction
-        fg_mask = applySubtractor(frame, subtractors[subtractorIndex][1])
+        # Hintergrundsubtraktion anwenden
+        fg_mask = applySubtractor(frame, sub)
 
-        # frame = postProccesing(frame)
-
-        # Calculate FPS
+        # FPS berechnen
         end_time = time.time()
         fps = 1 / (end_time - start_time) if end_time - start_time > 0 else 0
 
-        # Display FPS on frame
+        # FPS auf dem Frame anzeigen
         cv2.putText(fg_mask, f"FPS: {fps:.2f}", (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        cv2.imshow(subtractors[subtractorIndex][0], fg_mask)
+        cv2.imshow("BS Adjustments", fg_mask)
+
+        # Frame in Ausgabevideo schreiben
+       # out.write(fg_mask)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
     cap.release()
+   # out.release()  # Speicherung abschließen
     cv2.destroyAllWindows()
+    print(f"Das Video der Anpassungen wurde als '{output_video_path}' gespeichert.")
 
 
-#main()
-input_video_path = 'Assets/Videos/traffic.mp4'
-output_video_path = 'Assets/Results/_X_.mp4'
-applyAndSave(input_video_path, output_video_path,  subtractors[subtractorIndex][1])
+# Starte den Hauptprozess und speichere das Ergebnisvideo
+main("../Tracking/Results/MOG2_Reflection1.mp4")
