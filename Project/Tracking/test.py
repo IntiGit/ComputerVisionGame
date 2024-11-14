@@ -206,8 +206,9 @@ def main(output_video_path="adjustments_output.mp4"):
 
 
 # Starte den Hauptprozess und speichere das Ergebnisvideo
-# main("./VideoGSOC.mp4")
+# main("./Video.mp4")
 
+# Subtraktor anwenden und Resultat speichern
 #MOG2
 # applyAndSave("Assets/Videos/Reflection_1.mp4", "Assets/Results/MOG2/raw/Ref1_MOG2_raw.mp4")
 # applyAndSave("Assets/Videos/Reflection_5.mp4", "Assets/Results/MOG2/raw/Ref5_MOG2_raw.mp4")
