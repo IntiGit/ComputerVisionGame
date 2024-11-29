@@ -5,6 +5,7 @@ import random
 from Fruit import Fruit
 from ScoreBoard import ScoreBoard
 from Player import Player
+from Project.Tracking.backgroundSubtractionHandler import BackgroundSubtractionHandler
 
 ############################################################
 # In dieser Datei das Spiel starten durch die main Methode #
