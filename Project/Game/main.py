@@ -5,6 +5,7 @@ import random
 from Fruit import Fruit
 from ScoreBoard import ScoreBoard
 from Player import Player
+from Project.Tracking.DetectionHandler import DetectionHandler
 
 ############################################################
 # In dieser Datei das Spiel starten durch die main Methode #
@@ -24,21 +25,21 @@ playersPerTeam = 1
 playerSprites = [pygame.image.load("Assets/playerSpriteRed.png"),
                  pygame.image.load("Assets/playerSpriteYellow.png")]
 
-def initCamera(screen, useCam=False):
-    cap = cv2.VideoCapture("")
-    if useCam:
-        cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, screen.get_width())
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, screen.get_height())
+def initCamera(video_path=None, useCam=False):
+    cap = cv2.VideoCapture(0 if useCam else video_path)
+    if not cap.isOpened():
+        raise ValueError("Camera or video file could not be opened.")
     return cap
 
+def getCameraFrame(cap, detection_handler=None):
+    ret, frame = cap.read()
+    if not ret:
+        return None, None
+    if detection_handler:
+        fg_frame, positions = detection_handler(frame)
+        return frame, positions
+    return frame, []
 
-def getCameraFrame(cap):
-    ret, cameraFrame = cap.read()
-    imgRGB = cv2.cvtColor(cameraFrame, cv2.COLOR_BGR2RGB)
-    imgRGB = np.rot90(imgRGB)
-    gameFrame = pygame.surfarray.make_surface(imgRGB).convert()
-    return gameFrame
 
 
 def main():
@@ -47,7 +48,9 @@ def main():
     pygame.display.set_caption("Computer Vision Game")
     fps = 30
     clock = pygame.time.Clock()
-    cap = initCamera(screen)
+    #cap = initCamera(screen)
+    detection_handler = DetectionHandler()
+    cap = initCamera("../Reflection_5.mp4")
 
     players = []
     for i in range(numTeams * playersPerTeam):
@@ -62,7 +65,6 @@ def main():
 
     fruits = []
     last_spawn_time = pygame.time.get_ticks()
-
     scoreBoard = ScoreBoard(numTeams)
 
     running = True
@@ -77,6 +79,14 @@ def main():
                     running = False
 
         screen.blit(background_image, (0, 0))
+
+
+        frame, positions = getCameraFrame(cap, detection_handler)
+        if frame is None:
+            break
+        if positions:
+            for player, pos in zip(players, positions):
+                player.rect.x = int(pos[0] / frame.shape[1] * screen.get_width())  # Skaliere Position
 
         if len(fruits) < MAX_FRUITS and (current_time - last_spawn_time) > SPAWN_INTERVAL:
             fruit_type = random.choice(['banana', 'apple'])
@@ -95,11 +105,8 @@ def main():
 
         scoreBoard.draw(screen)
 
-        if useCamera:
-            screen.blit(getCameraFrame(cap), (0, 0))
-
         for player in players:
-            player.update(pygame.key.get_pressed(), screen)
+            player.draw(screen)
             scoreChange, fruitIndex = player.checkCollision(fruits)
             if scoreChange != 0:
                 playerIndex = 0 if player.team == "apple" else 1
