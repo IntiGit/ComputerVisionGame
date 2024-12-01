@@ -28,7 +28,8 @@ class BackgroundSubtractionHandler:
     def post_processing(self, frame):
 
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
-        frame = cv2.morphologyEx(frame, cv2.MORPH_CLOSE, kernel)
         frame = cv2.morphologyEx(frame, cv2.MORPH_OPEN, kernel)
+        frame = cv2.morphologyEx(frame, cv2.MORPH_CLOSE, kernel)
+
         frame = cv2.medianBlur(frame, 5)
         return frame
