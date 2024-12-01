@@ -18,7 +18,6 @@ SCREEN = [SCREEN_WIDTH, SCREEN_HEIGHT]
 useCamera = False
 MAX_FRUITS = 3
 SPAWN_INTERVAL = 1000
-
 numTeams = 2
 playersPerTeam = 1
 
