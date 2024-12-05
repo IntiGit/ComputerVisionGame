@@ -123,7 +123,7 @@ def detectPerson(frame, subtractor):
     fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_CROSS, (9, 9)))
     contours, _ = cv2.findContours(fgmask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    candidates = selectCandidates(contours, frame)
+    candidates = selectCandidates(contours)
     found = len(candidates) != 0
 
     merged_candidates = merge_overlapping_boxes(candidates)
