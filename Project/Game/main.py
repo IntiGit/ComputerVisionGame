@@ -16,7 +16,7 @@ SCREEN_WIDTH = background_image.get_width()
 SCREEN_HEIGHT = background_image.get_height()
 SCREEN = [SCREEN_WIDTH, SCREEN_HEIGHT]
 useCamera = False
-MAX_FRUITS = 3
+MAX_FRUITS = 2
 SPAWN_INTERVAL = 1000
 
 playerSprites = [pygame.image.load("Assets/playerSpriteRed.png"),
@@ -97,11 +97,11 @@ def main():
             screen.blit(getCameraFrame(cap), (0, 0))
 
         player.update(pygame.key.get_pressed(), screen)
-        scoreChange, fruitIndex = player.checkCollision(fruits)
-        if scoreChange != 0:
-            playerIndex = 0 if player.team == "apple" else 1
-            scoreBoard.changeScore(playerIndex, scoreChange)
-            fruits.pop(fruitIndex)
+        scoreChange, toRemove = player.checkCollision(fruits)
+        if len(toRemove) != 0:
+            scoreBoard.changeScore(0, scoreChange)
+            for fruitIndex in toRemove:
+                fruits.pop(fruitIndex)
 
         pygame.display.update()
         clock.tick(fps)
