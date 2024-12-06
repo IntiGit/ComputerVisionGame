@@ -19,11 +19,9 @@ useCamera = False
 MAX_FRUITS = 3
 SPAWN_INTERVAL = 1000
 
-numTeams = 2
-playersPerTeam = 1
-
 playerSprites = [pygame.image.load("Assets/playerSpriteRed.png"),
                  pygame.image.load("Assets/playerSpriteYellow.png")]
+
 
 def initCamera(screen, useCam=False):
     cap = cv2.VideoCapture("")
@@ -50,21 +48,14 @@ def main():
     clock = pygame.time.Clock()
     cap = initCamera(screen)
 
-    players = []
-    for i in range(numTeams * playersPerTeam):
-        sprite = playerSprites[i]
-        posX = (i + 1) * (screen.get_width() // (numTeams * playersPerTeam + 1)) - (sprite.get_width() // 2)
-        players.append(
-            Player(
-                posX,
-                screen.get_height() - sprite.get_height(),
-                sprite,
-                "apple" if i // playersPerTeam == 0 else "banana"))
+    sprite = playerSprites[0]
+    posX = screen.get_width() // 2 - sprite.get_width() // 2
+    player = Player(posX, screen.get_height() - sprite.get_height(), sprite, "apple")
 
     fruits = []
     last_spawn_time = pygame.time.get_ticks()
 
-    scoreBoard = ScoreBoard(numTeams)
+    scoreBoard = ScoreBoard(1)
 
     running = True
     while running:
@@ -90,22 +81,27 @@ def main():
             last_spawn_time = current_time
 
         # Update and draw each fruit
+        toRemove = set()
         for fruit in fruits:
             fruit.update_pos_Y()
+            if fruit.rect.y > screen.get_height():
+                toRemove.add(fruit)
+                continue
             fruit.draw(screen)
+        for f in toRemove:
+            fruits.remove(f)
 
         scoreBoard.draw(screen)
 
         if useCamera:
             screen.blit(getCameraFrame(cap), (0, 0))
 
-        for player in players:
-            player.update(pygame.key.get_pressed(), screen)
-            scoreChange, fruitIndex = player.checkCollision(fruits)
-            if scoreChange != 0:
-                playerIndex = 0 if player.team == "apple" else 1
-                scoreBoard.changeScore(playerIndex, scoreChange)
-                fruits.pop(fruitIndex)
+        player.update(pygame.key.get_pressed(), screen)
+        scoreChange, fruitIndex = player.checkCollision(fruits)
+        if scoreChange != 0:
+            playerIndex = 0 if player.team == "apple" else 1
+            scoreBoard.changeScore(playerIndex, scoreChange)
+            fruits.pop(fruitIndex)
 
         pygame.display.update()
         clock.tick(fps)
