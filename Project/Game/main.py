@@ -23,10 +23,8 @@ playerSprites = [pygame.image.load("Assets/playerSpriteRed.png"),
                  pygame.image.load("Assets/playerSpriteYellow.png")]
 
 
-def initCamera(screen, useCam=False):
-    cap = cv2.VideoCapture("")
-    if useCam:
-        cap = cv2.VideoCapture(0)
+def initCamera(screen):
+    cap = cv2.VideoCapture(0)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, screen.get_width())
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, screen.get_height())
     return cap
@@ -46,7 +44,7 @@ def main():
     pygame.display.set_caption("Computer Vision Game")
     fps = 30
     clock = pygame.time.Clock()
-    cap = initCamera(screen)
+    cap = initCamera(screen) if useCamera else None
 
     sprite = playerSprites[0]
     posX = screen.get_width() // 2 - sprite.get_width() // 2
@@ -94,7 +92,7 @@ def main():
         scoreBoard.draw(screen)
 
         if useCamera:
-            screen.blit(getCameraFrame(cap), (0, 0))
+            cv2.imshow("Cam", getCameraFrame(cap))
 
         player.update(pygame.key.get_pressed(), screen)
         scoreChange, toRemove = player.checkCollision(fruits)

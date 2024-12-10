@@ -33,7 +33,6 @@ class Player(pygame.sprite.Sprite):
         self.draw(screen)
 
     def checkCollision(self, fruits):
-        print(fruits)
         scoreChange = 0
         toRemove = set()
         for i, fruit in enumerate(fruits):

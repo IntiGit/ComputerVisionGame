@@ -40,7 +40,7 @@ def findCircles(boxes, frame):
 
                 if distance < min_distance:
                     min_distance = distance
-                    best_box = (x, head_region_y + cy - radius, w, h)
+                    best_box = (x, y, w, h)
 
             return best_box
     return None

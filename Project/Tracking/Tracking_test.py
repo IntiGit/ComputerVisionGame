@@ -1,3 +1,4 @@
+import collections
 import cv2
 import numpy as np
 import detection as detect
@@ -46,12 +47,43 @@ def testTracking(video_path):
 
     tracker = track.PersonTracker()
 
+    y_buffer = collections.deque(maxlen=50)
+    h_buffer = collections.deque(maxlen=50)
+    avgY, avgH = 0, 0
+
+    frameCount = 0
+    new_values = []  # Temporäre Liste für neue Werte
+
     while True:
         ret, frame = cap.read()
         if not ret:
             break
 
         detection = detect.detectPerson(frame, sub)
+        if detection:
+            x, y, w, h = detection
+
+            # Alle 100 Frames beginnen, 15 neue Werte zu sammeln
+            if frameCount % 100 == 0:
+                new_values = []  # Leere die Liste für neue Werte
+
+            # Füge bis zu 10 neue Werte hinzu
+            if len(new_values) < 30:
+                new_values.append((y, h))
+
+            # Wenn 10 neue Werte gesammelt wurden, aktualisiere die Queues und berechne neue Durchschnitte
+            if len(new_values) == 30:
+                y_buffer.extend(val[0] for val in new_values)
+                h_buffer.extend(val[1] for val in new_values)
+                avgY = np.median(y_buffer)
+                avgH = np.median(h_buffer)
+                new_values.append(0)
+
+            frameCount += 1
+
+            if avgY is not None and avgH is not None and len(y_buffer) > 30:
+                if abs(y - avgY) > 80 or abs(h - avgH) > 160:
+                    detection = (x, avgY, w, avgH)
 
         bbox = tracker.update(detection)
         tracker.draw_prediction(frame, bbox)
