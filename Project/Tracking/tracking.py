@@ -15,12 +15,16 @@ class PersonTracker:
         self.last_detection = None
         self.last_y = 0
 
-        # Warteschlange für die letzten 10 Größen
         self.sizes = deque(maxlen=10)
 
     def update(self, detection):
         if detection is not None:
             x, y, w, h = detection
+            if self.last_detection is not None:
+                print(abs(x - self.last_detection[0]))
+                if abs(x - self.last_detection[0]) > 250:
+                    detection = self.last_detection
+                    x, y, w, h = detection
             center_x = x + w / 2
             self.last_y = y + h // 2
             measurement = np.array([[np.float32(center_x)]])

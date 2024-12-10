@@ -111,7 +111,40 @@ def selectCandidates(contours):
     return candidates
 
 
-def detectPerson(frame, subtractor):
+def extract_orb_features(image, bounding_box):
+    x, y, w, h = bounding_box
+    cropped = image[y:y + h, x:x + w]
+
+    orb = cv2.ORB_create(nfeatures=500)
+    keypoints, descriptors = orb.detectAndCompute(cropped, None)
+
+    return keypoints, descriptors
+
+
+def match_orb_features(descriptors1, descriptors2):
+    if descriptors1 is None or descriptors2 is None:
+        return 0
+
+    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+    matches = bf.match(descriptors1, descriptors2)
+    return len(matches)
+
+
+def select_consistent_box_orb(image, bounding_boxes, reference_descriptor):
+    max_matches = 0
+    best_box = None
+
+    for i, box in enumerate(bounding_boxes):
+        _, descriptors = extract_orb_features(image, box)
+        matches = match_orb_features(descriptors, reference_descriptor)
+        if matches >= 50 and matches > max_matches:
+            max_matches = matches
+            best_box = box
+
+    return best_box
+
+
+def detectPerson(frame, subtractor, ref_descriptors):
     fgmask = subtractor.apply(frame)
 
     height, width = fgmask.shape[:2]
@@ -124,20 +157,26 @@ def detectPerson(frame, subtractor):
     contours, _ = cv2.findContours(fgmask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     candidates = selectCandidates(contours)
+
     found = len(candidates) != 0
 
     merged_candidates = merge_overlapping_boxes(candidates)
+
+    if ref_descriptors is not None:
+        consistent_box = select_consistent_box_orb(frame, merged_candidates, ref_descriptors)
+        return consistent_box
 
     best_box = None
     if found:
         best_box = findCircles(merged_candidates, frame)
 
+    result = None
     if best_box:
-        return best_box
+        result = best_box
     elif merged_candidates:
-        return getBox_mostVariance(merged_candidates, frame)
-    else:
-        return None
+        result = getBox_mostVariance(merged_candidates, frame)
+
+    return result
 
 
 def showBGS(frame, sub):

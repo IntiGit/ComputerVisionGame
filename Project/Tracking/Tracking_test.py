@@ -54,24 +54,25 @@ def testTracking(video_path):
     frameCount = 0
     new_values = []  # Temporäre Liste für neue Werte
 
+    descriptor = None
     while True:
         ret, frame = cap.read()
         if not ret:
             break
 
-        detection = detect.detectPerson(frame, sub)
+        detection = detect.detectPerson(frame, sub, descriptor)
         if detection:
             x, y, w, h = detection
 
-            # Alle 100 Frames beginnen, 15 neue Werte zu sammeln
-            if frameCount % 100 == 0:
-                new_values = []  # Leere die Liste für neue Werte
+            if w * h > 70000:
+                _, descriptor = detect.extract_orb_features(frame, (x, y, w, h))
 
-            # Füge bis zu 10 neue Werte hinzu
+            if frameCount % 100 == 0:
+                new_values = []
+
             if len(new_values) < 30:
                 new_values.append((y, h))
 
-            # Wenn 10 neue Werte gesammelt wurden, aktualisiere die Queues und berechne neue Durchschnitte
             if len(new_values) == 30:
                 y_buffer.extend(val[0] for val in new_values)
                 h_buffer.extend(val[1] for val in new_values)
