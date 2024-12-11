@@ -24,7 +24,7 @@ SPAWN_INTERVAL = 1000
 playerSprites = [pygame.image.load("Assets/playerSpriteRed.png"),
                  pygame.image.load("Assets/playerSpriteYellow.png")]
 
-videoPath = "C:/Users/Timo/Desktop/CV Videos/edited/SOT/Brick_1.mp4"
+videoPath = "C:/Users/Timo/Desktop/CV Videos/edited/SOT/Roundabout_1.mp4"
 
 
 def spawnFruit(fruits, current_time, last_spawn_time, screen):
@@ -97,6 +97,7 @@ def main():
     new_values = []
     descriptor = None
 
+    last_detection = None
     running = cap.isOpened()
     while running:
         '''Tracking'''
@@ -104,10 +105,11 @@ def main():
         if not ret:
             break
 
-        detection = detect.detectPerson(frame, sub, descriptor)
+        detection = detect.detectPerson(frame, sub, descriptor, last_detection)
 
         if detection:
             x, y, w, h = detection
+            last_detection = detection
 
             if w * h > 70000:
                 _, descriptor = detect.extract_orb_features(frame, (x, y, w, h))

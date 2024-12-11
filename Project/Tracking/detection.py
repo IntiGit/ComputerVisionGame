@@ -9,7 +9,7 @@ def findCircles(boxes, frame):
     for (x, y, w, h) in boxes:
         # Definiere einen erweiterten Suchbereich oberhalb und innerhalb der Box
         head_region_x = max(x - 20, 0)
-        head_region_y = max(y - h//4, 0)
+        head_region_y = max(y - h // 4, 0)
         head_region_w = w + 40
         head_region_h = int(h * 0.5)
 
@@ -36,7 +36,8 @@ def findCircles(boxes, frame):
                 cx, cy, radius = circle
                 circle_center = np.int32((head_region_x + cx, head_region_y + cy))
                 box_top_center = (x + w // 2, y)
-                distance = np.sqrt((circle_center[0] - box_top_center[0]) ** 2 + (circle_center[1] - box_top_center[1]) ** 2)
+                distance = np.sqrt(
+                    (circle_center[0] - box_top_center[0]) ** 2 + (circle_center[1] - box_top_center[1]) ** 2)
 
                 if distance < min_distance:
                     min_distance = distance
@@ -144,7 +145,7 @@ def select_consistent_box_orb(image, bounding_boxes, reference_descriptor):
     return best_box
 
 
-def detectPerson(frame, subtractor, ref_descriptors):
+def detectPerson(frame, subtractor, ref_descriptors, lastDetection):
     fgmask = subtractor.apply(frame)
 
     height, width = fgmask.shape[:2]
@@ -164,6 +165,13 @@ def detectPerson(frame, subtractor, ref_descriptors):
 
     if ref_descriptors is not None:
         consistent_box = select_consistent_box_orb(frame, merged_candidates, ref_descriptors)
+        if consistent_box is None and lastDetection is not None:
+            for box in merged_candidates:
+                x, y, w, h = box
+                lx, ly, lw, lh = lastDetection
+                if abs((w * h) - (lw*lh)) < 30000 and abs(x - lx) < 100:
+                    return box
+
         return consistent_box
 
     best_box = None
@@ -197,9 +205,5 @@ def showDetection(frame, sub):
     boundingBox = detectPerson(frame, sub)
     if boundingBox is not None:
         x, y, w, h = boundingBox
-        cv2.rectangle(frame, (x, y), (x + w, y + h + int(0.1*h)), (0, 255, 0), 2)
+        cv2.rectangle(frame, (x, y), (x + w, y + h + int(0.1 * h)), (0, 255, 0), 2)
     cv2.imshow('Detection', frame)
-
-
-
-

@@ -21,7 +21,6 @@ class PersonTracker:
         if detection is not None:
             x, y, w, h = detection
             if self.last_detection is not None:
-                print(abs(x - self.last_detection[0]))
                 if abs(x - self.last_detection[0]) > 250:
                     detection = self.last_detection
                     x, y, w, h = detection
