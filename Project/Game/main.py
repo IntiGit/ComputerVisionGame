@@ -24,7 +24,7 @@ SPAWN_INTERVAL = 1000
 playerSprites = [pygame.image.load("Assets/playerSpriteRed.png"),
                  pygame.image.load("Assets/playerSpriteYellow.png")]
 
-videoPath = "C:/Users/Timo/Desktop/CV Videos/edited/SOT/Brick_1.mp4"
+videoPath = "../Brick_1.mp4"
 
 
 def spawnFruit(fruits, current_time, last_spawn_time, screen):
@@ -153,7 +153,7 @@ def main():
 
         scoreBoard.draw(screen)
 
-        player.update(pygame.key.get_pressed(), screen)
+        player.update(bbox[0], screen)
 
         scoreChange, toRemove = player.checkCollision(fruits)
 
