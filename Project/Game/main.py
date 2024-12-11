@@ -1,3 +1,5 @@
+import collections
+
 import numpy as np
 import cv2
 import pygame
@@ -6,6 +8,9 @@ from Fruit import Fruit
 from ScoreBoard import ScoreBoard
 from Player import Player
 from Project.Tracking.backgroundSubtractionHandler import BackgroundSubtractionHandler
+from Project.Tracking.Tracking_test import testTracking
+import Project.Tracking.tracking as track
+
 
 ############################################################
 # In dieser Datei das Spiel starten durch die main Methode #
@@ -44,16 +49,34 @@ def main():
     pygame.display.set_caption("Computer Vision Game")
     fps = 30
     clock = pygame.time.Clock()
-    cap = initCamera(screen) if useCamera else None
+    cap = initCamera(screen) if useCamera else cv2.VideoCapture("../privat.mov")
 
     sprite = playerSprites[0]
     posX = screen.get_width() // 2 - sprite.get_width() // 2
     player = Player(posX, screen.get_height() - sprite.get_height(), sprite, "apple")
-
     fruits = []
     last_spawn_time = pygame.time.get_ticks()
-
     scoreBoard = ScoreBoard(1)
+
+    sub = cv2.createBackgroundSubtractorMOG2()
+    sub.setBackgroundRatio(0.8)
+    sub.setDetectShadows(True)
+    sub.setShadowThreshold(0.2)
+    sub.setShadowValue(255)
+    sub.setHistory(500)
+    sub.setNMixtures(5)
+    sub.setVarThreshold(50)
+
+    tracker = track.PersonTracker()
+
+    y_buffer = collections.deque(maxlen=50)
+    h_buffer = collections.deque(maxlen=50)
+    avgY, avgH = 0, 0
+
+    frameCount = 0
+    new_values = []  # Temporäre Liste für neue Werte
+
+    descriptor = None
 
     running = True
     while running:
@@ -91,10 +114,19 @@ def main():
 
         scoreBoard.draw(screen)
 
-        if useCamera:
-            cv2.imshow("Cam", getCameraFrame(cap))
 
-        player.update(pygame.key.get_pressed(), screen)
+        ret, frame = cap.read()
+        frame = cv2.rotate(frame, cv2.ROTATE_180)
+        frame = cv2.flip(frame, 0)
+
+
+        cv2.imshow("Cam", frame)
+        if not ret:
+            break
+
+        bbox = testTracking(frame, sub, descriptor, frameCount, y_buffer, h_buffer, tracker, avgY, avgH, new_values)
+        print(bbox[0])
+        player.update(bbox[0], screen)
         scoreChange, toRemove = player.checkCollision(fruits)
         if len(toRemove) != 0:
             scoreBoard.changeScore(0, scoreChange)

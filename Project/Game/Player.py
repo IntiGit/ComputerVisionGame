@@ -21,14 +21,8 @@ class Player(pygame.sprite.Sprite):
         bounding_box = self.rect.copy()  # Kopie des Rechtecks erstellen
         pygame.draw.rect(screen, (255, 0, 0), bounding_box, 2)
 
-    def update(self, keys, screen):
-        prevDir = self.flip
-        if keys[pygame.K_LEFT]:
-            self.rect.x -= self.speed
-            self.flip = False
-        if keys[pygame.K_RIGHT]:
-            self.rect.x += self.speed
-            self.flip = True
+    def update(self, boundboxX, screen):
+        self.rect.x = boundboxX
         self.rect.x = max(0, min(screen.get_width() - self.rect.width, self.rect.x))
         self.draw(screen)
 
