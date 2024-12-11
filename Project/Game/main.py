@@ -155,7 +155,7 @@ def main():
 
         scoreBoard.draw(screen)
 
-        player.update(pygame.key.get_pressed(), screen)
+        player.update(bbox[0], screen)
 
         scoreChange, toRemove = player.checkCollision(fruits)
 
