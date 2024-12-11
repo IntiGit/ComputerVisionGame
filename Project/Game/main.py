@@ -6,6 +6,7 @@ import pygame
 import random
 import Project.Tracking.tracking as track
 import Project.Tracking.detection as detect
+import Project.Tracking.metrics as mt
 from Fruit import Fruit
 from ScoreBoard import ScoreBoard
 from Player import Player
@@ -24,8 +25,10 @@ SPAWN_INTERVAL = 1000
 playerSprites = [pygame.image.load("Assets/playerSpriteRed.png"),
                  pygame.image.load("Assets/playerSpriteYellow.png")]
 
-videoPath = "C:/Users/Timo/Desktop/CV Videos/edited/SOT/Roundabout_1.mp4"
+video = "Brick_1"
+videoPath = "C:/Users/Timo/Desktop/CV Videos/edited/SOT/" + video + ".mp4"
 
+metric = mt.Metric("../Tracking/Truths/groundTruth_" + video + ".csv")
 
 def spawnFruit(fruits, current_time, last_spawn_time, screen):
     if len(fruits) < MAX_FRUITS and (current_time - last_spawn_time) > SPAWN_INTERVAL:
@@ -155,7 +158,7 @@ def main():
 
         scoreBoard.draw(screen)
 
-        player.update(bbox[0], screen)
+        player.update(bbox[0]/cap.get(cv2.CAP_PROP_FRAME_WIDTH), screen)
 
         scoreChange, toRemove = player.checkCollision(fruits)
 

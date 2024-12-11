@@ -22,7 +22,7 @@ class Player(pygame.sprite.Sprite):
         pygame.draw.rect(screen, (255, 0, 0), bounding_box, 2)
 
     def update(self, bboxX, screen):
-        self.rect.x += bboxX
+        self.rect.x = bboxX * screen.get_width()
         self.rect.x = max(0, min(screen.get_width() - self.rect.width, self.rect.x))
         self.draw(screen)
 
