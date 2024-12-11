@@ -1,11 +1,14 @@
+import collections
+
 import numpy as np
 import cv2
 import pygame
 import random
+import Project.Tracking.tracking as track
+import Project.Tracking.detection as detect
 from Fruit import Fruit
 from ScoreBoard import ScoreBoard
 from Player import Player
-from Project.Tracking.backgroundSubtractionHandler import BackgroundSubtractionHandler
 
 ############################################################
 # In dieser Datei das Spiel starten durch die main Methode #
@@ -15,27 +18,50 @@ background_image = pygame.image.load("Assets/background1.jpg")
 SCREEN_WIDTH = background_image.get_width()
 SCREEN_HEIGHT = background_image.get_height()
 SCREEN = [SCREEN_WIDTH, SCREEN_HEIGHT]
-useCamera = False
 MAX_FRUITS = 2
 SPAWN_INTERVAL = 1000
 
 playerSprites = [pygame.image.load("Assets/playerSpriteRed.png"),
                  pygame.image.load("Assets/playerSpriteYellow.png")]
 
-
-def initCamera(screen):
-    cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, screen.get_width())
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, screen.get_height())
-    return cap
+videoPath = "C:/Users/Timo/Desktop/CV Videos/edited/SOT/Brick_1.mp4"
 
 
-def getCameraFrame(cap):
-    ret, cameraFrame = cap.read()
-    imgRGB = cv2.cvtColor(cameraFrame, cv2.COLOR_BGR2RGB)
-    imgRGB = np.rot90(imgRGB)
-    gameFrame = pygame.surfarray.make_surface(imgRGB).convert()
-    return gameFrame
+def spawnFruit(fruits, current_time, last_spawn_time, screen):
+    if len(fruits) < MAX_FRUITS and (current_time - last_spawn_time) > SPAWN_INTERVAL:
+        fruit_type = random.choice(['banana', 'apple'])
+        speed = random.randint(2, 5)
+
+        new_fruit = Fruit(fruit_type, speed, screen)
+        fruits.append(new_fruit)
+
+        # Update the last spawn  time
+        return current_time
+    return last_spawn_time
+
+
+def updateFruits(fruits, screen):
+    toRemove = set()
+    for fruit in fruits:
+        fruit.update_pos_Y()
+        if fruit.rect.y > screen.get_height():
+            toRemove.add(fruit)
+            continue
+        fruit.draw(screen)
+    for f in toRemove:
+        fruits.remove(f)
+
+
+def setupSubtractor():
+    sub = cv2.createBackgroundSubtractorMOG2()
+    sub.setBackgroundRatio(0.8)
+    sub.setDetectShadows(True)
+    sub.setShadowThreshold(0.2)
+    sub.setShadowValue(255)
+    sub.setHistory(500)
+    sub.setNMixtures(5)
+    sub.setVarThreshold(50)
+    return sub
 
 
 def main():
@@ -44,7 +70,11 @@ def main():
     pygame.display.set_caption("Computer Vision Game")
     fps = 30
     clock = pygame.time.Clock()
-    cap = initCamera(screen) if useCamera else None
+    cap = cv2.VideoCapture(videoPath)
+    if videoPath is None:
+        cap = cv2.VideoCapture(0)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, screen.get_width())
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, screen.get_height())
 
     sprite = playerSprites[0]
     posX = screen.get_width() // 2 - sprite.get_width() // 2
@@ -55,8 +85,57 @@ def main():
 
     scoreBoard = ScoreBoard(1)
 
-    running = True
+    '''Tracking Setup'''
+    sub = setupSubtractor()
+    tracker = track.PersonTracker()
+
+    y_buffer = collections.deque(maxlen=50)
+    h_buffer = collections.deque(maxlen=50)
+    avgY, avgH = 0, 0
+
+    frameCount = 0
+    new_values = []
+    descriptor = None
+
+    running = cap.isOpened()
     while running:
+        '''Tracking'''
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        detection = detect.detectPerson(frame, sub, descriptor)
+
+        if detection:
+            x, y, w, h = detection
+
+            if w * h > 70000:
+                _, descriptor = detect.extract_orb_features(frame, (x, y, w, h))
+
+            if frameCount % 100 == 0:
+                new_values = []
+
+            if len(new_values) < 30:
+                new_values.append((y, h))
+
+            if len(new_values) == 30:
+                y_buffer.extend(val[0] for val in new_values)
+                h_buffer.extend(val[1] for val in new_values)
+                avgY = np.median(y_buffer)
+                avgH = np.median(h_buffer)
+                new_values.append(0)
+
+            frameCount += 1
+
+            if avgY is not None and avgH is not None and len(y_buffer) > 30:
+                if abs(y - avgY) > 80 or abs(h - avgH) > 160:
+                    detection = (x, avgY, w, avgH)
+
+        bbox = tracker.update(detection)
+        tracker.draw_prediction(frame, bbox)
+        cv2.imshow("Cam", frame)
+
+        '''Game'''
         current_time = pygame.time.get_ticks()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -68,34 +147,16 @@ def main():
 
         screen.blit(background_image, (0, 0))
 
-        if len(fruits) < MAX_FRUITS and (current_time - last_spawn_time) > SPAWN_INTERVAL:
-            fruit_type = random.choice(['banana', 'apple'])
-            speed = random.randint(2, 5)
+        last_spawn_time = spawnFruit(fruits, current_time, last_spawn_time, screen)
 
-            new_fruit = Fruit(fruit_type, speed, screen)
-            fruits.append(new_fruit)
-
-            # Update the last spawn  time
-            last_spawn_time = current_time
-
-        # Update and draw each fruit
-        toRemove = set()
-        for fruit in fruits:
-            fruit.update_pos_Y()
-            if fruit.rect.y > screen.get_height():
-                toRemove.add(fruit)
-                continue
-            fruit.draw(screen)
-        for f in toRemove:
-            fruits.remove(f)
+        updateFruits(fruits, screen)
 
         scoreBoard.draw(screen)
 
-        if useCamera:
-            cv2.imshow("Cam", getCameraFrame(cap))
-
         player.update(pygame.key.get_pressed(), screen)
+
         scoreChange, toRemove = player.checkCollision(fruits)
+
         if len(toRemove) != 0:
             scoreBoard.changeScore(0, scoreChange)
             for fruitIndex in toRemove:
@@ -106,6 +167,7 @@ def main():
 
     pygame.quit()
     cap.release()
+    cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':

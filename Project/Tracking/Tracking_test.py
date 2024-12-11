@@ -52,7 +52,7 @@ def testTracking(video_path):
     avgY, avgH = 0, 0
 
     frameCount = 0
-    new_values = []  # Temporäre Liste für neue Werte
+    new_values = []
 
     descriptor = None
     while True:
