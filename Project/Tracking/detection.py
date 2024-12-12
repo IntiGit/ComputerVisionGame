@@ -148,10 +148,6 @@ def select_consistent_box_orb(image, bounding_boxes, reference_descriptor):
 def detectPerson(frame, subtractor, ref_descriptors, lastDetection):
     fgmask = subtractor.apply(frame)
 
-    height, width = fgmask.shape[:2]
-    bottom = int(height * 0.1)
-    fgmask[-bottom:, :] = 0
-
     fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_CROSS, (5, 5)))
     fgmask = cv2.dilate(fgmask, np.ones((9, 9)))
     fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_CROSS, (9, 9)))

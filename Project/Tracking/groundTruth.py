@@ -4,8 +4,8 @@ import csv
 
 # Lade das Modell
 model = YOLO('yolov8n.pt')
-root_path = "C:/Users/Timo/Desktop/CV Videos/edited/SOT/"
-video = "Moving_Occlusion_1"
+root_path = "_"
+video = "Brick_1"
 video_path = root_path + video + ".mp4"
 
 # Öffne das Video

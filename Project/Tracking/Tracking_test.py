@@ -99,4 +99,4 @@ def testTracking(video_path):
     cv2.destroyAllWindows()
 
 
-#testTracking("C:/Users/Timo/Desktop/CV Videos/edited/SOT/Small_Movement_1.mp4")
+#testTracking("_/Small_Movement_1.mp4")

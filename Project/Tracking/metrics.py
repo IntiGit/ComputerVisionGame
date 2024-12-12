@@ -1,6 +1,6 @@
 import csv
 import math
-
+import cv2
 
 class Metric:
     def __init__(self, csvFile):
@@ -50,7 +50,7 @@ class Metric:
         area_gt = w_gt * h_gt
         area_pred = w_pred * h_pred
 
-        if area_gt == 0:
+        if area_gt == 0 or area_pred == 0:
             return
 
         rse = (area_pred - area_gt) / area_gt
@@ -85,11 +85,14 @@ class Metric:
         # Berechne die Fläche der Union
         area_gt = w_gt * h_gt
         area_pred = w_pred * h_pred
+        if area_gt == 0:
+            return
+
         union_area = area_gt + area_pred - intersection_area
 
         # Verhindere Division durch Null
         if union_area == 0:
-            return 0.0
+            return
 
         # Berechne IoU
         iou = intersection_area / union_area
@@ -101,9 +104,12 @@ class Metric:
         if gt is None:
             return
 
-        _, x_gt, y_gt, _, _ = gt
+        _, x_gt, y_gt, w_gt, h_gt = gt
         x_pred, y_pred, _, _ = pred
+        if w_gt * h_gt == 0:
+            return
 
         de = math.sqrt((x_pred - x_gt) ** 2 + (y_pred - y_gt) ** 2)
-        return de
+
+        self.results.append(de)
 
