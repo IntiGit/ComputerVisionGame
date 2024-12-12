@@ -31,9 +31,10 @@ playerSprites = [pygame.image.load("Assets/playerSpriteRed.png"),
 video = "Brick_2"
 videoPath = "_" + video + ".mp4"
 
+# Zum Messen von DE, RSE, IoU
 # metric = mt.Metric("../Tracking/Truths/groundTruth_" + video + ".csv")
 
-
+# Video speichern
 def writeToOutput(out, frame, gt_box, pred_box):
     _, x_gt, y_gt, w_gt, h_gt = gt_box
     x_p, y_p, w_p, h_p = pred_box
@@ -115,8 +116,8 @@ def main():
     sub = setupSubtractor()
     tracker = track.PersonTracker()
 
-    y_buffer = collections.deque(maxlen=50)
-    h_buffer = collections.deque(maxlen=50)
+    y_buffer = collections.deque(maxlen=50) # vergangende y-Werte speichern
+    h_buffer = collections.deque(maxlen=50) # vergangende h-Werte speichern
     avgY, avgH = 0, 0
 
     detectionCount = 0
@@ -135,11 +136,11 @@ def main():
         # Detektion einer Person im aktuellen Frame
         detection = detect.detectPerson(frame, sub, descriptor, last_detection)
 
-        # Tracking Buffer aktualisieren
+        # Buffer aktualisieren
         if detection:
             x, y, w, h = detection
             last_detection = detection
-
+            # Wenn die Box groß genug ist, wird wahrscheinlich die ganze Person drin sein
             if w * h > 70000:
                 _, descriptor = detect.extract_orb_features(frame, (x, y, w, h))
 
@@ -158,6 +159,7 @@ def main():
 
             detectionCount += 1
 
+            # Korrigieren von y/h um Außreißer zu unterdrücken
             if avgY is not None and avgH is not None and len(y_buffer) > 30:
                 if abs(y - avgY) > 80 or abs(h - avgH) > 160:
                     detection = (x, avgY, w, avgH)

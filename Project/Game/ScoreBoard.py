@@ -1,6 +1,6 @@
 import pygame
 
-
+# Klasse für das ScoreBoard
 class ScoreBoard:
     def __init__(self, numTeams):
         super(ScoreBoard, self).__init__()

@@ -1,10 +1,8 @@
 import pygame
 import numpy as np
 
-
+# Klasse für den / die Spieler
 class Player(pygame.sprite.Sprite):
-    # -----------------------------------------------------------
-    # init class
     def __init__(self, posX, posY, sprite, team):
         super(Player, self).__init__()
         self.sprite = pygame.transform.flip(sprite, True, False)
@@ -28,7 +26,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = max(0, min(screen.get_width() - self.rect.width, self.rect.x))
         self.draw(screen)
 
-    # Auf Kollision mit Frucht pürfen
+    # Auf Kollision mit Frucht prüfen
     def checkCollision(self, fruits):
         scoreChange = 0
         toRemove = set()

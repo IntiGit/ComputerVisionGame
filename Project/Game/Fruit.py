@@ -1,7 +1,7 @@
 import pygame
 import random
 
-
+# Klasse für die Früchte
 class Fruit:
     def __init__(self, fruit_type, speed, screen):
         self.screen = screen
@@ -19,9 +19,6 @@ class Fruit:
 
     # Frucht zeichnen
     def draw(self, surface):
-        bounding_box = self.rect.copy()  # Kopie des Rechtecks erstellen
+        bounding_box = self.rect.copy()
         pygame.draw.rect(surface, (255, 0, 255), bounding_box, 2)
         surface.blit(self.image, self.rect)
-
-    def is_collected(self, playerspos):
-        pass

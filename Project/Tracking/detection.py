@@ -7,7 +7,7 @@ def findCircles(boxes, frame):
     min_distance = float('inf')
 
     for (x, y, w, h) in boxes:
-        # Definiere einen erweiterten Suchbereich oberhalb und innerhalb der Box
+        # Erweiterten Suchbereich oberhalb und innerhalb der Box
         head_region_x = max(x - 20, 0)
         head_region_y = max(y - h // 4, 0)
         head_region_w = w + 40
@@ -15,10 +15,9 @@ def findCircles(boxes, frame):
 
         roi = frame[head_region_y:head_region_y + head_region_h, head_region_x:head_region_x + head_region_w]
 
-        # Konvertiere ROI zu Graustufen und glätte das Bild
         gray_roi = cv2.medianBlur(cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY), 5)
 
-        # Hough-Kreistransformation
+        # Hough-Transformation
         circles = cv2.HoughCircles(
             gray_roi,
             cv2.HOUGH_GRADIENT,
@@ -95,6 +94,7 @@ def getBox_mostVariance(boxes, frame):
     return most_uneven_box
 
 
+# Boxen filtern nach Größe und Seitenverhältnis
 def selectCandidates(contours):
     candidates = []
     for contour in contours:
@@ -122,6 +122,7 @@ def extract_orb_features(image, bounding_box):
     return keypoints, descriptors
 
 
+# Anzahl an Übereinstimmungen zwischen 2 ORB-Deskriptoren finden
 def match_orb_features(descriptors1, descriptors2):
     if descriptors1 is None or descriptors2 is None:
         return 0
@@ -130,7 +131,7 @@ def match_orb_features(descriptors1, descriptors2):
     matches = bf.match(descriptors1, descriptors2) # Vergleichen von ORB-Feature
     return len(matches)
 
-# konsistenteste Box basierend auf ORB-Features auswählen
+# beste Box basierend auf ORB-Features auswählen
 def select_consistent_box_orb(image, bounding_boxes, reference_descriptor):
     max_matches = 0
     best_box = None
@@ -145,6 +146,7 @@ def select_consistent_box_orb(image, bounding_boxes, reference_descriptor):
     return best_box
 
 
+# Person detektieren
 def detectPerson(frame, subtractor, ref_descriptors, lastDetection):
 
     # BGS anwenden
@@ -161,6 +163,8 @@ def detectPerson(frame, subtractor, ref_descriptors, lastDetection):
 
     merged_candidates = merge_overlapping_boxes(candidates)
 
+    # Wenn es schon einen ORB-DEskriptor für das Objekt gibt, die am besten
+    # passende Box zurückgeben
     if ref_descriptors is not None:
         consistent_box = select_consistent_box_orb(frame, merged_candidates, ref_descriptors)
         if consistent_box is None and lastDetection is not None:
@@ -171,7 +175,7 @@ def detectPerson(frame, subtractor, ref_descriptors, lastDetection):
                     return box
 
         return consistent_box
-    # Wenn keine konsistente Box gefunden wurde, dann beste Box mit Kreise oder Box mit höchster Varianz
+    # Wenn keine konsistente Box gefunden wurde, dann beste Box mit Kreisen in der Nähe oder Box mit höchster Varianz
     best_box = None
     if found:
         best_box = findCircles(merged_candidates, frame)

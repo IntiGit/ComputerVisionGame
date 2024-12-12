@@ -4,7 +4,7 @@ import numpy as np
 import detection as detect
 import tracking as track
 
-
+# Test Methoden um das Tracking zu testen
 def testDetection(video_path):
     cap = cv2.VideoCapture(video_path)
     sub = cv2.createBackgroundSubtractorMOG2()

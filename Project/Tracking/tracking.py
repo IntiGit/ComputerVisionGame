@@ -6,6 +6,7 @@ import numpy as np
 
 class PersonTracker:
     def __init__(self):
+        # Kalman Filter initialisieren
         self.kalman = cv2.KalmanFilter(2, 1)
         self.kalman.measurementMatrix = np.array([[1, 0]], np.float32)
         self.kalman.transitionMatrix = np.array([[1, 1],
@@ -18,9 +19,10 @@ class PersonTracker:
         self.sizes = deque(maxlen=10)
 
     def update(self, detection):
+        # Wenn etwas gefunden wurde vom Detektor soll der Filter sich daran anpassen
         if detection is not None:
             x, y, w, h = detection
-            if self.last_detection is not None:
+            if self.last_detection is not None: # Große Sprünge verhindern
                 if abs(x - self.last_detection[0]) > 250:
                     detection = self.last_detection
                     x, y, w, h = detection
@@ -30,12 +32,12 @@ class PersonTracker:
             self.kalman.correct(measurement)
             self.last_detection = detection
 
-            # Speichern der Größe
+            # Speichern der Größe der Box
             self.sizes.append((w, h))
         else:
             self.last_detection = None
 
-        # Vorhersage machen
+        # Vorhersage machen (Entspricht der Detektion falls vorhanden)
         prediction = self.kalman.predict()
         pred_x = prediction[0]
 
@@ -46,7 +48,7 @@ class PersonTracker:
             avg_w = int(np.dot(weights, [size[0] for size in self.sizes]))
             avg_h = int(np.dot(weights, [size[1] for size in self.sizes]))
         else:
-            avg_w, avg_h = 0, 0  # Standardwerte
+            avg_w, avg_h = 0, 0
 
         # Bounding Box erstellen
         return int(pred_x - avg_w / 2), int(self.last_y - avg_h / 2), avg_w, avg_h

@@ -8,6 +8,7 @@ class Metric:
         self.data = self.loadCSVFile()
         self.results = []
 
+    #CSV Datei (GroundTruth) laden
     def loadCSVFile(self):
         data = []
         try:
@@ -25,10 +26,10 @@ class Metric:
         return data
 
     def get_row_by_frame(self, frameNr):
-        # Suche die Zeile, die der frameNr entspricht
+        # Zeile uschen die der frameNr entspricht
         for row in self.data:
             if int(row[0]) == frameNr:
-                # Wenn frameNr übereinstimmt, packe die Werte in eine Variable
+                # Wenn frameNr übereinstimmt, Werte zurückgeben
                 frame_data = (
                     int(row[0]),
                     int(row[1]),
@@ -39,6 +40,7 @@ class Metric:
                 return frame_data
         return None
 
+    # RSE berechnen
     def relative_size_error(self, frameCount, pred):
         gt = self.get_row_by_frame(frameCount)
         if gt is None:
@@ -57,6 +59,7 @@ class Metric:
 
         self.results.append(rse)
 
+    # IoU berechnen
     def IoU(self, frameCount, pred):
         gt = self.get_row_by_frame(frameCount)
         if gt is None:
@@ -99,6 +102,7 @@ class Metric:
 
         self.results.append(iou)
 
+    # DE berechnen
     def displacement_error(self, frameCount, pred):
         gt = self.get_row_by_frame(frameCount)
         if gt is None: # keine Ground-Truth-Daten

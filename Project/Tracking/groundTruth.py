@@ -8,10 +8,9 @@ root_path = "_"
 video = "Brick_1"
 video_path = root_path + video + ".mp4"
 
-# Öffne das Video
 cap = cv2.VideoCapture(video_path)
 
-# Öffne die CSV-Datei im Schreibmodus
+# Öffnen die CSV-Datei
 with open('./Truths/groundTruth_' + video + '.csv', 'w', newline='') as csvfile:
 
     fieldnames = ['FrameNr', 'x', 'y', 'w', 'h']
@@ -27,23 +26,23 @@ with open('./Truths/groundTruth_' + video + '.csv', 'w', newline='') as csvfile:
         if not ret:
             break
 
-        frame_number += 1  # Erhöhe die Frame-Nummer
+        frame_number += 1
 
         results = model.track(frame, persist=True)
 
         detections = results[0].boxes
-        detected = False  # Flag, um zu überprüfen, ob eine Person erkannt wurde
+        detected = False
 
         for det in detections:
-            if det.cls == 0:  # Nur Personen (Klasse 0)
+            if det.cls == 0:  # Nur Personen finden
                 x1, y1, x2, y2 = det.xyxy[0].tolist()
                 x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
 
-                # Berechne Breite und Höhe der Bounding Box
+                # Breite und Höhe der Bounding Box
                 w = x2 - x1
                 h = y2 - y1
 
-                # Zeichne die Bounding Box
+                # Zeichnen die Bounding Box
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
 
                 # Speichern der Bounding Box in der CSV-Datei
@@ -52,10 +51,9 @@ with open('./Truths/groundTruth_' + video + '.csv', 'w', newline='') as csvfile:
                 break
 
         if not detected:
-            # Wenn keine Bounding Box gefunden wurde, speichere die Information
+            # Wenn keine Bounding Box gefunden wurde, speichere (0,0,0,0)
             writer.writerow({'FrameNr': frame_number, 'x': 0, 'y': 0, 'w': 0, 'h': 0})
 
-        # Zeige das Frame mit den Bounding Boxen
         cv2.imshow("Frame", frame)
 
         # Beende bei Drücken von 'q'
