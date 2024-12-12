@@ -25,10 +25,10 @@ SPAWN_INTERVAL = 1000
 playerSprites = [pygame.image.load("Assets/playerSpriteRed.png"),
                  pygame.image.load("Assets/playerSpriteYellow.png")]
 
-video = "_"
+video = "Brick_2"
 videoPath = "_" + video + ".mp4"
 
-metric = mt.Metric("../Tracking/Truths/groundTruth_" + video + ".csv")
+# metric = mt.Metric("../Tracking/Truths/groundTruth_" + video + ".csv")
 
 
 def writeToOutput(out, frame, gt_box, pred_box):
@@ -42,7 +42,7 @@ def writeToOutput(out, frame, gt_box, pred_box):
 def spawnFruit(fruits, current_time, last_spawn_time, screen):
     if len(fruits) < MAX_FRUITS and (current_time - last_spawn_time) > SPAWN_INTERVAL:
         fruit_type = random.choice(['banana', 'apple'])
-        speed = random.randint(2, 5)
+        speed = random.randint(7, 10)
 
         new_fruit = Fruit(fruit_type, speed, screen)
         fruits.append(new_fruit)
@@ -77,7 +77,7 @@ def setupSubtractor():
 
 
 def main():
-    """Game Setupt"""
+    """Game Setup"""
     pygame.init()
     screen = pygame.display.set_mode(SCREEN)
     pygame.display.set_caption("Computer Vision Game")
@@ -105,7 +105,6 @@ def main():
     #                       fps,
     #                       (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
     #                        int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
-
 
     """Tracking Setup"""
     sub = setupSubtractor()
@@ -159,7 +158,7 @@ def main():
         bbox = tracker.update(detection)
 
         # writeToOutput(out, frame, metric.get_row_by_frame(frameCount), bbox)
-        metric.relative_size_error(frameCount, bbox)
+        # metric.relative_size_error(frameCount, bbox)
 
         tracker.draw_prediction(frame, bbox)
         cv2.imshow("Cam", frame)
@@ -194,7 +193,7 @@ def main():
         pygame.display.update()
         clock.tick(fps)
 
-    print(np.mean(metric.results))
+    # print(np.mean(metric.results))
 
     pygame.quit()
     cap.release()
