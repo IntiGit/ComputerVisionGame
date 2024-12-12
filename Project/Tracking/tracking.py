@@ -51,6 +51,7 @@ class PersonTracker:
         # Bounding Box erstellen
         return int(pred_x - avg_w / 2), int(self.last_y - avg_h / 2), avg_w, avg_h
 
+    # Zeichnen der Vorhersage
     def draw_prediction(self, frame, bbox):
         x, y, w, h = bbox
         if x < 0 or y < 0:

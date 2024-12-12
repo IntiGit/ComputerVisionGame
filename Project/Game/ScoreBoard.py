@@ -8,6 +8,7 @@ class ScoreBoard:
         self.font = pygame.font.Font(None, 36)  # Schriftgröße anpassen nach Bedarf
         self.spacing = 100 // numTeams
 
+    # Punkte und Team zeichnen
     def draw(self, screen):
         width = screen.get_width()
         spacing = width - 100
@@ -21,6 +22,7 @@ class ScoreBoard:
                 score_text = self.font.render(f"Team Banana : {score} ", True, (255, 255, 0))
             screen.blit(score_text, (x - i * (score_text.get_width() + 100), y))
 
+    # Punktestand aktualisieren
     def changeScore(self, player_index, points):
         if 0 <= player_index < len(self.points):
             self.points[player_index] += points

@@ -15,17 +15,20 @@ class Player(pygame.sprite.Sprite):
         self.flip = False
         self.team = team
 
+    # Spieler zeichnen
     def draw(self, screen):
         image_to_draw = pygame.transform.flip(self.sprite, self.flip, False)
         screen.blit(image_to_draw, self.rect)
         bounding_box = self.rect.copy()  # Kopie des Rechtecks erstellen
         pygame.draw.rect(screen, (255, 0, 0), bounding_box, 2)
 
+    # Akutelle X-Position des Spielers aktulisieren
     def update(self, bboxX, screen):
         self.rect.x = bboxX * screen.get_width()
         self.rect.x = max(0, min(screen.get_width() - self.rect.width, self.rect.x))
         self.draw(screen)
 
+    # Auf Kollision mit Frucht pürfen
     def checkCollision(self, fruits):
         scoreChange = 0
         toRemove = set()

@@ -101,7 +101,7 @@ class Metric:
 
     def displacement_error(self, frameCount, pred):
         gt = self.get_row_by_frame(frameCount)
-        if gt is None:
+        if gt is None: # keine Ground-Truth-Daten
             return
 
         _, x_gt, y_gt, w_gt, h_gt = gt
@@ -109,7 +109,7 @@ class Metric:
         if w_gt * h_gt == 0:
             return
 
-        de = math.sqrt((x_pred - x_gt) ** 2 + (y_pred - y_gt) ** 2)
+        de = math.sqrt((x_pred - x_gt) ** 2 + (y_pred - y_gt) ** 2) # euklidischen Abstand zwischen den Mittelpunkten
 
         self.results.append(de)
 

@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-
+# Kreise finden
 def findCircles(boxes, frame):
     best_box = None
     min_distance = float('inf')
@@ -29,7 +29,7 @@ def findCircles(boxes, frame):
             minRadius=20,
             maxRadius=40
         )
-
+        # Wenn Kreise gefunden wurden, berechne die Distanz zum Box-Zentrum
         if circles is not None:
             circles = np.round(circles[0, :]).astype("int")
             for circle in circles:
@@ -46,7 +46,7 @@ def findCircles(boxes, frame):
             return best_box
     return None
 
-
+# Zusammenführen von überlappenden Boxen
 def merge_overlapping_boxes(boxes):
     if len(boxes) == 0:
         return []
@@ -75,7 +75,7 @@ def merge_overlapping_boxes(boxes):
     merged_boxes.append(current_box)
     return merged_boxes
 
-
+# Box mit der höchsten varianz erhalten
 def getBox_mostVariance(boxes, frame):
     max_normalized_variance = -1
     most_uneven_box = None
@@ -99,19 +99,19 @@ def selectCandidates(contours):
     candidates = []
     for contour in contours:
         area = cv2.contourArea(contour)
-        if area < 5000 or area > 85000:
+        if area < 5000 or area > 85000:  # Filter für Konturfläche
             continue
 
         (x, y, w, h) = cv2.boundingRect(contour)
 
         ratio = h / w
 
-        if not (1.5 < ratio < 4.0):
+        if not (1.5 < ratio < 4.0):  # Filter für Seitenverhältnis
             continue
         candidates.append((x, y, w, h))
     return candidates
 
-
+# Extrahieren von ORB-Features aus einer Box
 def extract_orb_features(image, bounding_box):
     x, y, w, h = bounding_box
     cropped = image[y:y + h, x:x + w]
@@ -127,10 +127,10 @@ def match_orb_features(descriptors1, descriptors2):
         return 0
 
     bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-    matches = bf.match(descriptors1, descriptors2)
+    matches = bf.match(descriptors1, descriptors2) # Vergleichen von ORB-Feature
     return len(matches)
 
-
+# konsistenteste Box basierend auf ORB-Features auswählen
 def select_consistent_box_orb(image, bounding_boxes, reference_descriptor):
     max_matches = 0
     best_box = None
@@ -146,8 +146,10 @@ def select_consistent_box_orb(image, bounding_boxes, reference_descriptor):
 
 
 def detectPerson(frame, subtractor, ref_descriptors, lastDetection):
-    fgmask = subtractor.apply(frame)
 
+    # BGS anwenden
+    fgmask = subtractor.apply(frame)
+    # Opening, Dilatation, Closing
     fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_CROSS, (5, 5)))
     fgmask = cv2.dilate(fgmask, np.ones((9, 9)))
     fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_CROSS, (9, 9)))
@@ -169,7 +171,7 @@ def detectPerson(frame, subtractor, ref_descriptors, lastDetection):
                     return box
 
         return consistent_box
-
+    # Wenn keine konsistente Box gefunden wurde, dann beste Box mit Kreise oder Box mit höchster Varianz
     best_box = None
     if found:
         best_box = findCircles(merged_candidates, frame)

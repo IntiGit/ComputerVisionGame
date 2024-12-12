@@ -15,6 +15,7 @@ from Player import Player
 # In dieser Datei das Spiel starten durch die main Methode #
 ############################################################
 
+# Hintergrundbild und Spielbildschirm-Größe festlegen
 background_image = pygame.image.load("Assets/background1.jpg")
 SCREEN_WIDTH = background_image.get_width()
 SCREEN_HEIGHT = background_image.get_height()
@@ -22,9 +23,11 @@ SCREEN = [SCREEN_WIDTH, SCREEN_HEIGHT]
 MAX_FRUITS = 2
 SPAWN_INTERVAL = 1000
 
+# Spieler-Sprites
 playerSprites = [pygame.image.load("Assets/playerSpriteRed.png"),
                  pygame.image.load("Assets/playerSpriteYellow.png")]
 
+# Pfad für Video
 video = "Brick_2"
 videoPath = "_" + video + ".mp4"
 
@@ -38,7 +41,7 @@ def writeToOutput(out, frame, gt_box, pred_box):
     cv2.rectangle(frame, (x_p, y_p), (x_p + w_p, y_p + h_p), (0, 255, 0), 2)
     out.write(frame)
 
-
+# Erstellt neue Früchte
 def spawnFruit(fruits, current_time, last_spawn_time, screen):
     if len(fruits) < MAX_FRUITS and (current_time - last_spawn_time) > SPAWN_INTERVAL:
         fruit_type = random.choice(['banana', 'apple'])
@@ -51,7 +54,7 @@ def spawnFruit(fruits, current_time, last_spawn_time, screen):
         return current_time
     return last_spawn_time
 
-
+# Aktualisieren und Entfernen von Früchten
 def updateFruits(fruits, screen):
     toRemove = set()
     for fruit in fruits:
@@ -64,6 +67,7 @@ def updateFruits(fruits, screen):
         fruits.remove(f)
 
 
+# Subtractor für unsere BGS mit MOG2 einrichten
 def setupSubtractor():
     sub = cv2.createBackgroundSubtractorMOG2()
     sub.setBackgroundRatio(0.8)
@@ -84,7 +88,7 @@ def main():
     fps = 30
     clock = pygame.time.Clock()
     cap = cv2.VideoCapture(videoPath)
-    if videoPath is None:
+    if videoPath is None:  # Wenn kein Video angegeben, dann Kamera
         cap = cv2.VideoCapture(0)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, screen.get_width())
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, screen.get_height())
@@ -96,6 +100,7 @@ def main():
     fruits = []
     last_spawn_time = pygame.time.get_ticks()
 
+    # Punkteanzeige initialisieren
     scoreBoard = ScoreBoard(1)
 
     """Videos speichern"""
@@ -127,8 +132,10 @@ def main():
         if not ret:
             break
         frameCount += 1
+        # Detektion einer Person im aktuellen Frame
         detection = detect.detectPerson(frame, sub, descriptor, last_detection)
 
+        # Tracking Buffer aktualisieren
         if detection:
             x, y, w, h = detection
             last_detection = detection
@@ -145,7 +152,7 @@ def main():
             if len(new_values) == 30:
                 y_buffer.extend(val[0] for val in new_values)
                 h_buffer.extend(val[1] for val in new_values)
-                avgY = np.median(y_buffer)
+                avgY = np.median(y_buffer)  # Berechne Median-Werte aus Buffer
                 avgH = np.median(h_buffer)
                 new_values.append(0)
 
@@ -172,7 +179,7 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
-
+        # hintergrundbild zeichnen
         screen.blit(background_image, (0, 0))
 
         last_spawn_time = spawnFruit(fruits, current_time, last_spawn_time, screen)
@@ -181,8 +188,9 @@ def main():
 
         scoreBoard.draw(screen)
 
+        # Spieler-Position basierend auf Tracker aktualisieren
         player.update(bbox[0] / cap.get(cv2.CAP_PROP_FRAME_WIDTH), screen)
-
+        # Kollisionen überprüfen und Punkte anpassen
         scoreChange, toRemove = player.checkCollision(fruits)
 
         if len(toRemove) != 0:
