@@ -3,7 +3,7 @@ import numpy as np
 
 # Klasse für den / die Spieler
 class Player(pygame.sprite.Sprite):
-    def __init__(self, posX, posY, sprite, team):
+    def __init__(self, posX, posY, sprite, team, track_id):
         super(Player, self).__init__()
         self.sprite = pygame.transform.flip(sprite, True, False)
         self.rect = self.sprite.get_rect()
@@ -12,6 +12,7 @@ class Player(pygame.sprite.Sprite):
         self.speed = 10
         self.flip = False
         self.team = team
+        self.track_id = track_id
 
     # Spieler zeichnen
     def draw(self, screen):

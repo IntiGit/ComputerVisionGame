@@ -28,8 +28,8 @@ playerSprites = [pygame.image.load("Assets/playerSpriteRed.png"),
                  pygame.image.load("Assets/playerSpriteYellow.png")]
 
 # Pfad für Video
-video = "Brick_2"
-videoPath = "_" + video + ".mp4"
+video = "Turn_Around"
+videoPath = "C:/Users/Timo/Desktop/CV Videos/edited/MOT/" + video + ".mp4"
 
 # Zum Messen von DE, RSE, IoU
 # metric = mt.Metric("../Tracking/Truths/groundTruth_" + video + ".csv")
@@ -94,15 +94,17 @@ def main():
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, screen.get_width())
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, screen.get_height())
 
-    sprite = playerSprites[0]
-    posX = screen.get_width() // 2 - sprite.get_width() // 2
-    player = Player(posX, screen.get_height() - sprite.get_height(), sprite, "apple")
+    sprite1 = playerSprites[0]
+    player1 = Player(sprite1.get_width(), screen.get_height() - sprite1.get_height(), sprite1, "apple", 0)
+
+    sprite2 = playerSprites[1]
+    player2 = Player(screen.get_width() - sprite2.get_width(), screen.get_height() - sprite2.get_height(), sprite2, "banana", 1)
 
     fruits = []
     last_spawn_time = pygame.time.get_ticks()
 
     # Punkteanzeige initialisieren
-    scoreBoard = ScoreBoard(1)
+    scoreBoard = ScoreBoard()
 
     """Videos speichern"""
     # fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec für .mp4
@@ -115,61 +117,25 @@ def main():
     """Tracking Setup"""
     sub = setupSubtractor()
     tracker = track.PersonTracker()
-
-    y_buffer = collections.deque(maxlen=50) # vergangende y-Werte speichern
-    h_buffer = collections.deque(maxlen=50) # vergangende h-Werte speichern
-    avgY, avgH = 0, 0
-
-    detectionCount = 0
     frameCount = 0
-    new_values = []
-    descriptor = None
-
-    last_detection = None
     running = cap.isOpened()
     while running:
         """Tracking"""
         ret, frame = cap.read()
         if not ret:
             break
+
+        frame = cv2.resize(frame, (1280, 720))
+
+        detections, bgs = detect.detectPerson(frame, sub)  # Bounding-Boxen von Personen detektieren
+        tracks = tracker.update(detections, frame, bgs)  # Tracker aktualisieren
+        tracker.draw_tracks(frame)  # Tracks visualisieren
+
+        if cv2.waitKey(30) & 0xFF == ord('q'):
+            break
+
         frameCount += 1
-        # Detektion einer Person im aktuellen Frame
-        detection = detect.detectPerson(frame, sub, descriptor, last_detection)
 
-        # Buffer aktualisieren
-        if detection:
-            x, y, w, h = detection
-            last_detection = detection
-            # Wenn die Box groß genug ist, wird wahrscheinlich die ganze Person drin sein
-            if w * h > 70000:
-                _, descriptor = detect.extract_orb_features(frame, (x, y, w, h))
-
-            if detectionCount % 100 == 0:
-                new_values = []
-
-            if len(new_values) < 30:
-                new_values.append((y, h))
-
-            if len(new_values) == 30:
-                y_buffer.extend(val[0] for val in new_values)
-                h_buffer.extend(val[1] for val in new_values)
-                avgY = np.median(y_buffer)  # Berechne Median-Werte aus Buffer
-                avgH = np.median(h_buffer)
-                new_values.append(0)
-
-            detectionCount += 1
-
-            # Korrigieren von y/h um Außreißer zu unterdrücken
-            if avgY is not None and avgH is not None and len(y_buffer) > 30:
-                if abs(y - avgY) > 80 or abs(h - avgH) > 160:
-                    detection = (x, avgY, w, avgH)
-
-        bbox = tracker.update(detection)
-
-        # writeToOutput(out, frame, metric.get_row_by_frame(frameCount), bbox)
-        # metric.relative_size_error(frameCount, bbox)
-
-        tracker.draw_prediction(frame, bbox)
         cv2.imshow("Cam", frame)
 
         """Game"""
@@ -191,13 +157,40 @@ def main():
         scoreBoard.draw(screen)
 
         # Spieler-Position basierend auf Tracker aktualisieren
-        player.update(bbox[0] / cap.get(cv2.CAP_PROP_FRAME_WIDTH), screen)
-        # Kollisionen überprüfen und Punkte anpassen
-        scoreChange, toRemove = player.checkCollision(fruits)
+        if tracks is not None:
+            matchedA = matchedB = False
+            for t in tracks:
+                if t.track_id == player1.track_id:
+                    player1.update(t.bbox[0] / cap.get(cv2.CAP_PROP_FRAME_WIDTH), screen)
+                    matchedA = True
+                if t.track_id == player2.track_id:
+                    player2.update(t.bbox[0] / cap.get(cv2.CAP_PROP_FRAME_WIDTH), screen)
+                    matchedB = True
 
-        if len(toRemove) != 0:
-            scoreBoard.changeScore(0, scoreChange)
-            for fruitIndex in toRemove:
+            if not matchedA:
+                for t in tracks:
+                    if t.track_id != player2.track_id:
+                        player1.update(t.bbox[0] / cap.get(cv2.CAP_PROP_FRAME_WIDTH), screen)
+                        player1.track_id = t.track_id
+
+            if not matchedB:
+                for t in tracks:
+                    if t.track_id != player1.track_id:
+                        player2.update(t.bbox[0] / cap.get(cv2.CAP_PROP_FRAME_WIDTH), screen)
+                        player2.track_id = t.track_id
+
+        # Kollisionen überprüfen und Punkte anpassen
+        scoreChangeA, toRemoveA = player1.checkCollision(fruits)
+        scoreChangeB, toRemoveB = player2.checkCollision(fruits)
+
+        if len(toRemoveA) != 0:
+            scoreBoard.changeScore(0, scoreChangeA)
+            for fruitIndex in toRemoveA:
+                fruits.pop(fruitIndex)
+
+        if len(toRemoveB) != 0:
+            scoreBoard.changeScore(0, scoreChangeB)
+            for fruitIndex in toRemoveB:
                 fruits.pop(fruitIndex)
 
         pygame.display.update()

@@ -1,26 +1,26 @@
 import pygame
 
+
 # Klasse für das ScoreBoard
 class ScoreBoard:
-    def __init__(self, numTeams):
+    def __init__(self):
         super(ScoreBoard, self).__init__()
-        self.points = [0] * numTeams
+        self.points = [0, 0]
         self.font = pygame.font.Font(None, 36)  # Schriftgröße anpassen nach Bedarf
-        self.spacing = 100 // numTeams
+        self.spacing = 50
 
     # Punkte und Team zeichnen
     def draw(self, screen):
         width = screen.get_width()
         spacing = width - 100
 
-        for i, score in enumerate(self.points):
-            x = 100 + i * spacing
-            y = 10
-            if i == 0:
-                score_text = self.font.render(f"Team Apple : {score} ", True, (255, 0, 0))
-            else:
-                score_text = self.font.render(f"Team Banana : {score} ", True, (255, 255, 0))
-            screen.blit(score_text, (x - i * (score_text.get_width() + 100), y))
+        score_textA = self.font.render(f"Team Apple : {self.points[0]} ", True, (255, 0, 0))
+        score_textB = self.font.render(f"Team Banana : {self.points[1]} ", True, (255, 255, 0))
+        xA = 100
+        xB = screen.get_width() - 100 - score_textB.get_width()
+        y = 10
+        screen.blit(score_textA, (xA, y))
+        screen.blit(score_textB, (xB, y))
 
     # Punktestand aktualisieren
     def changeScore(self, player_index, points):
