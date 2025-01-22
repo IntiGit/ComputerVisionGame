@@ -17,8 +17,8 @@ from Player import Player
 
 # Hintergrundbild und Spielbildschirm-Größe festlegen
 background_image = pygame.image.load("Assets/background1.jpg")
-SCREEN_WIDTH = background_image.get_width()
-SCREEN_HEIGHT = background_image.get_height()
+SCREEN_WIDTH = background_image.get_width()                     # Hie passenden Wert für Ollis Mac hinmachen
+SCREEN_HEIGHT = background_image.get_height()                   #                   " "
 SCREEN = [SCREEN_WIDTH, SCREEN_HEIGHT]
 MAX_FRUITS = 2
 SPAWN_INTERVAL = 1000
@@ -88,7 +88,7 @@ def main():
     pygame.display.set_caption("Computer Vision Game")
     fps = 30
     clock = pygame.time.Clock()
-    cap = cv2.VideoCapture(videoPath)
+    cap = cv2.VideoCapture(0)
     if videoPath is None:  # Wenn kein Video angegeben, dann Kamera
         cap = cv2.VideoCapture(0)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, screen.get_width())
@@ -119,6 +119,7 @@ def main():
     tracker = track.PersonTracker()
     frameCount = 0
     running = cap.isOpened()
+    started = False
     while running:
         """Tracking"""
         ret, frame = cap.read()
@@ -127,14 +128,23 @@ def main():
 
         frame = cv2.resize(frame, (1280, 720))
 
-        detections, bgs = detect.detectPerson(frame, sub)  # Bounding-Boxen von Personen detektieren
-        tracks = tracker.update(detections, frame, bgs)  # Tracker aktualisieren
-        tracker.draw_tracks(frame)  # Tracks visualisieren
+        if started:
+            detections, bgs = detect.detectPerson(frame, sub)  # Bounding-Boxen von Personen detektieren
+            tracks = tracker.update(detections, frame, bgs)  # Tracker aktualisieren
+            tracker.draw_tracks(frame)  # Tracks visualisieren
 
         if cv2.waitKey(30) & 0xFF == ord('q'):
             break
 
         frameCount += 1
+
+        if not started:
+            cv2.putText(frame, "WARTE", (frame.shape[1] // 2 - 200, frame.shape[0] // 2 + 100),
+                        cv2.FONT_HERSHEY_SIMPLEX, 6, (10, 10, 230), 5)
+            cv2.imshow("Cam", frame)
+            cv2.waitKey(5 * 1000) # 5 Sekunden Timer am Start
+            started = True
+            continue
 
         cv2.imshow("Cam", frame)
 

@@ -49,7 +49,7 @@ class Track:
         self.bbox = (int(predicted_x - self.age * predicted_v * 1.5), y, w, h)
 
 
-class Tracker:
+class PersonTracker:
     def __init__(self):
         self.tracks = []
         self.last_detections = []
@@ -137,6 +137,8 @@ class Tracker:
                 hist = self.calculate_histogram(image, sub, bbox)
                 self.tracks.append(Track(self.next_id, bbox, hist, self.colors[self.next_id % 100]))
                 self.next_id += 1
+
+        return self.tracks
 
     def draw_tracks(self, image):
         for track in self.tracks:
