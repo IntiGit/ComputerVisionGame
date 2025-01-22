@@ -3,7 +3,7 @@ import numpy as np
 
 
 # Zusammenführen von überlappenden Boxen
-def merge_overlapping_boxes(boxes):
+def merge_overlapping_boxes(boxes, reach=10):
     if len(boxes) == 0:
         return []
 
@@ -18,7 +18,7 @@ def merge_overlapping_boxes(boxes):
         nx, ny, nw, nh = boxes[i]
 
         # Berechne Überlappungsbereich
-        if nx <= x + w and ny <= y + h:
+        if nx <= x + w + reach and ny <= y + h:
             merged_x = min(x, nx)
             merged_y = min(y, ny)
             merged_w = max(x + w, nx + nw) - merged_x
@@ -65,7 +65,7 @@ def minimal_covering_rectangles(contour, frame, max_points_per_rect=50, min_heig
     y_max = max([y + h for x, y, w, h in filtered_rectangles])
 
     area = (x_max - x_min) * (y_max - y_min)
-    if area < 15000 or area > 85000:
+    if area < 15000 or area > 130000:
         return None
 
     return x_min, y_min, x_max - x_min, y_max - y_min
@@ -103,10 +103,10 @@ def split_wide_contours(contours, max_width):
         else:
             new_contours.append(contour)
 
-    return new_contours
+    return new_contours, len(new_contours) > len(contours)
 
 
-def filter_contours_by_white_area(contours, fgmask, min_white_pixels=15000):
+def filter_contours_by_white_area(contours, fgmask, min_white_pixels=10000):
     filtered_contours = []
 
     for contour in contours:
@@ -134,7 +134,7 @@ def detectPerson(frame, subtractor):
     #cv2.imshow("BGS", fgmask)
 
     contours, _ = cv2.findContours(fgmask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    contours = split_wide_contours(contours, 350)
+    contours, hasSplit = split_wide_contours(contours, 400)
     contours = filter_contours_by_white_area(contours, fgmask)
 
     candidates = []
@@ -146,7 +146,8 @@ def detectPerson(frame, subtractor):
     if len(candidates) == 0:
         return [], fgmask
 
-    merged_candidates = merge_overlapping_boxes(candidates)
+    reach = 10 if not hasSplit else 0
+    merged_candidates = merge_overlapping_boxes(candidates, reach)
 
     return merged_candidates, fgmask
 

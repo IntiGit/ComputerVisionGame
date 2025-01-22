@@ -49,7 +49,7 @@ class Track:
         self.bbox = (int(predicted_x - self.age * predicted_v * 1.5), y, w, h)
 
 
-class PersonTracker:
+class Tracker:
     def __init__(self):
         self.tracks = []
         self.last_detections = []
@@ -77,7 +77,7 @@ class PersonTracker:
                 dist = abs(track.bbox[0] - det[0]) / 200
                 if dist > 1:
                     dist = 100
-                cost_matrix[i, j] = hist_similarity + dist
+                cost_matrix[i, j] = hist_similarity #+ dist
 
         return cost_matrix
 
@@ -103,12 +103,15 @@ class PersonTracker:
         unmatched_detections = set(range(len(detections)))
 
         for t_idx, d_idx in zip(track_indices, det_indices):
-            if cost_matrix_hist[t_idx, d_idx] > 1.6:
+            if cost_matrix_hist[t_idx, d_idx] > 0.6:
                 continue
 
-            bbox = detections[d_idx]
-            hist = self.calculate_histogram(image, sub, bbox)
-            self.tracks[t_idx].update(bbox, hist)
+            d_bbox = detections[d_idx]
+            t_bbox = self.tracks[t_idx].bbox
+            if abs(t_bbox[0] - d_bbox[0]) > 400:
+                continue
+            hist = self.calculate_histogram(image, sub, d_bbox)
+            self.tracks[t_idx].update(d_bbox, hist)
 
             unmatched_tracks.discard(t_idx)
             unmatched_detections.discard(d_idx)
@@ -124,15 +127,16 @@ class PersonTracker:
         # Create new tracks for unmatched detections
         for d_idx in unmatched_detections:
             bbox = detections[d_idx]
+            skip = False
             for t in self.tracks:
-                if abs((bbox[0] + bbox[2] // 2) - (t.bbox[0] + t.bbox[2] // 2)) < 50:
-                    continue
+                if abs((bbox[0] + bbox[2] // 2) - (t.bbox[0] + t.bbox[2] // 2)) < 80:
+                    skip = True
+            if skip:
+                continue
             if bbox[2] * bbox[3] > 15000 and bbox[3] / bbox[2] > 2.25:
                 hist = self.calculate_histogram(image, sub, bbox)
                 self.tracks.append(Track(self.next_id, bbox, hist, self.colors[self.next_id % 100]))
                 self.next_id += 1
-
-        return self.tracks
 
     def draw_tracks(self, image):
         for track in self.tracks:
