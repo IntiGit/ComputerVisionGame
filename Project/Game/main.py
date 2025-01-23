@@ -28,8 +28,8 @@ playerSprites = [pygame.image.load("Assets/playerSpriteRed.png"),
                  pygame.image.load("Assets/playerSpriteYellow.png")]
 
 # Pfad für Video
-video = "Turn_Around"
-videoPath = "C:/Users/Timo/Desktop/CV Videos/edited/MOT/" + video + ".mp4"
+video = ""
+videoPath = "../Project/3 Personen_2.mp4"
 
 # Zum Messen von DE, RSE, IoU
 # metric = mt.Metric("../Tracking/Truths/groundTruth_" + video + ".csv")
@@ -88,15 +88,15 @@ def main():
     pygame.display.set_caption("Computer Vision Game")
     fps = 30
     clock = pygame.time.Clock()
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(videoPath)
     if videoPath is None:  # Wenn kein Video angegeben, dann Kamera
         cap = cv2.VideoCapture(0)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, screen.get_width())
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, screen.get_height())
 
+    # Spieler initialisieren
     sprite1 = playerSprites[0]
     player1 = Player(sprite1.get_width(), screen.get_height() - sprite1.get_height(), sprite1, "apple", 0)
-
     sprite2 = playerSprites[1]
     player2 = Player(screen.get_width() - sprite2.get_width(), screen.get_height() - sprite2.get_height(), sprite2, "banana", 1)
 
@@ -139,6 +139,7 @@ def main():
 
         frameCount += 1
 
+        # Anzeige für 5 Sekunden, um sich entsprechend Platzieren zu können
         if not started:
             cv2.putText(frame, "WARTE", (frame.shape[1] // 2 - 200, frame.shape[0] // 2 + 100),
                         cv2.FONT_HERSHEY_SIMPLEX, 6, (10, 10, 230), 5)
@@ -158,15 +159,14 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
-        # hintergrundbild zeichnen
+        # akutellen Frame als Hintergrundbild zeichnen
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame_surface = pygame.surfarray.make_surface(frame.swapaxes(0, 1))
         screen.blit(frame_surface, (0, 0))
 
+        # Zeichnet die Spieloberfläche auf den screen
         last_spawn_time = spawnFruit(fruits, current_time, last_spawn_time, screen)
-
         updateFruits(fruits, screen)
-
         scoreBoard.draw(screen)
 
         # Spieler-Position basierend auf Tracker aktualisieren
@@ -196,17 +196,20 @@ def main():
         scoreChangeA, toRemoveA = player1.checkCollision(fruits)
         scoreChangeB, toRemoveB = player2.checkCollision(fruits)
 
+        # dieselbe Frucht soll nicht doppelt entfernt werden, wenn beide Spieler mit der Frucht kollidieren
         for idx in toRemoveA:
             if idx in toRemoveB:
                 toRemoveB.remove(idx)
 
+        # Spieler 1 kollidiert mit einer Frucht - Frucht wird aus der Liste entfernt
         if len(toRemoveA) != 0:
             scoreBoard.changeScore(0, scoreChangeA)
             for fruitIndex in toRemoveA:
                 fruits.pop(fruitIndex)
 
+        # Spieler 2 kollidiert mit einer Frucht - Frucht wird aus der Liste entfernt
         if len(toRemoveB) != 0:
-            scoreBoard.changeScore(0, scoreChangeB)
+            scoreBoard.changeScore(1, scoreChangeB)
             for fruitIndex in toRemoveB:
                 fruits.pop(fruitIndex)
 
