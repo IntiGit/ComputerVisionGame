@@ -17,8 +17,8 @@ from Player import Player
 
 # Hintergrundbild und Spielbildschirm-Größe festlegen
 background_image = pygame.image.load("Assets/background1.jpg")
-SCREEN_WIDTH = background_image.get_width()                     # Hie passenden Wert für Ollis Mac hinmachen
-SCREEN_HEIGHT = background_image.get_height()                   #                   " "
+SCREEN_WIDTH = 1280 #background_image.get_width()                     # Hie passenden Wert für Ollis Mac hinmachen
+SCREEN_HEIGHT = 720 #background_image.get_height()                    #                   " "
 SCREEN = [SCREEN_WIDTH, SCREEN_HEIGHT]
 MAX_FRUITS = 2
 SPAWN_INTERVAL = 1000
@@ -126,8 +126,9 @@ def main():
         if not ret:
             break
 
-        frame = cv2.resize(frame, (1280, 720))
+        frame = cv2.resize(frame, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
+        tracks = []
         if started:
             detections, bgs = detect.detectPerson(frame, sub)  # Bounding-Boxen von Personen detektieren
             tracks = tracker.update(detections, frame, bgs)  # Tracker aktualisieren
@@ -158,7 +159,9 @@ def main():
                 if event.key == pygame.K_ESCAPE:
                     running = False
         # hintergrundbild zeichnen
-        screen.blit(background_image, (0, 0))
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        frame_surface = pygame.surfarray.make_surface(frame.swapaxes(0, 1))
+        screen.blit(frame_surface, (0, 0))
 
         last_spawn_time = spawnFruit(fruits, current_time, last_spawn_time, screen)
 
@@ -171,10 +174,10 @@ def main():
             matchedA = matchedB = False
             for t in tracks:
                 if t.track_id == player1.track_id:
-                    player1.update(t.bbox[0] / cap.get(cv2.CAP_PROP_FRAME_WIDTH), screen)
+                    player1.update(t.bbox[0] / (cap.get(cv2.CAP_PROP_FRAME_WIDTH) * 2), screen)
                     matchedA = True
                 if t.track_id == player2.track_id:
-                    player2.update(t.bbox[0] / cap.get(cv2.CAP_PROP_FRAME_WIDTH), screen)
+                    player2.update(t.bbox[0] / (cap.get(cv2.CAP_PROP_FRAME_WIDTH) * 2), screen)
                     matchedB = True
 
             if not matchedA:
@@ -192,6 +195,10 @@ def main():
         # Kollisionen überprüfen und Punkte anpassen
         scoreChangeA, toRemoveA = player1.checkCollision(fruits)
         scoreChangeB, toRemoveB = player2.checkCollision(fruits)
+
+        for idx in toRemoveA:
+            if idx in toRemoveB:
+                toRemoveB.remove(idx)
 
         if len(toRemoveA) != 0:
             scoreBoard.changeScore(0, scoreChangeA)
