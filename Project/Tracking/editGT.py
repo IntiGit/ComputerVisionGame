@@ -15,7 +15,8 @@ def display_groundtruth(video_path, json_path):
         groundtruth = json.load(f)
 
     frame_id = 0  # Initialisiere Frame-Id
-
+    colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255), (255, 255, 255),
+              (0, 0, 0)]
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -33,10 +34,9 @@ def display_groundtruth(video_path, json_path):
                 confidence = obj["confidence"]
 
                 # Bounding Box und Text mit ID, X, Y und Frame-Nummer zeichnen
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 200), 2)
+                cv2.rectangle(frame, (x1, y1), (x2, y2), colors[object_id], 2)
                 text = f"ID: {object_id}, X: {x1}, Y: {y1}"
-                cv2.putText(frame, text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 200), 1)
-
+                cv2.putText(frame, text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, colors[object_id], 1)
 
         # Frame anzeigen (optional)
         cv2.putText(frame, f"{frame_id}", (10, 700), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 255, 0), 6)
@@ -46,7 +46,7 @@ def display_groundtruth(video_path, json_path):
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-        cv2.waitKey(30)
+        cv2.waitKey(0)
 
         frame_id += 1
 
@@ -56,7 +56,7 @@ def display_groundtruth(video_path, json_path):
 
 
 # Beispielaufruf der Funktion
-video = "Random_1"
+video = "Close_Far"
 video_path = "C:/Users/Timo/Desktop/CV Videos/edited/MOT/" + video + ".mp4"
 json_path = "./Truths/groundtruth_" + video + ".json"
 display_groundtruth(video_path, json_path)
