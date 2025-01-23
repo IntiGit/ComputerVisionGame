@@ -29,7 +29,7 @@ playerSprites = [pygame.image.load("Assets/playerSpriteRed.png"),
 
 # Pfad für Video
 video = ""
-videoPath = "../Project/3 Personen_2.mp4"
+videoPath = "../3 Personen_1.mp4"
 
 # Zum Messen von DE, RSE, IoU
 # metric = mt.Metric("../Tracking/Truths/groundTruth_" + video + ".csv")
