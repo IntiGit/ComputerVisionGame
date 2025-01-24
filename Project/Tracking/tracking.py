@@ -8,12 +8,13 @@ class Track:
         self.track_id = track_id
         self.bbox = bbox
         self.last_detection = bbox
-        self.average_histogram = initial_histogram
+        self.average_histogram = initial_histogram  # Histogramm zur WIedererkennung
         self.histograms = [initial_histogram]  # Liste, um die letzten Histogramme zu speichern
-        self.color = color  # Einzigartige Farbe für diesen Track
-        self.age = 0  # Alter des Tracks (Anzahl Frames seit Erstellung)
+        self.color = color  # Farbe für diesen Track
+        self.age = 0  # Alter des Tracks
         self.movementDir = 0
 
+        # Kalman Filter zum Predicten
         self.kf = cv2.KalmanFilter(2, 1)
         self.kf.measurementMatrix = np.array([[1, 0]], np.float32)
         self.kf.transitionMatrix = np.array([[1, 1], [0, 1]], np.float32)
@@ -30,7 +31,7 @@ class Track:
         self.last_detection = bbox
         self.kf.correct(np.array([[np.float32(bbox[0])]]))
 
-        # Füge das neue Histogramm hinzu und halte die Liste auf maximal 10 Einträge
+        # Fügt das neue Histogramm hinzu und hält die Liste auf maximal 10 Einträge
         self.histograms.append(new_histogram)
         if len(self.histograms) > 10:
             self.histograms.pop(0)
@@ -46,7 +47,6 @@ class Track:
         predicted_x = int(predicted[0, 0])  # Vorhergesagte x-Position
         predicted_v = int(predicted[1, 0])  # Vorhergesagte Geschwindigkeit
 
-        # Verwende vorheriges y, w, h und vorhergesagtes x
         x, y, w, h = self.bbox
         self.bbox = (int(predicted_x - self.age * predicted_v * 1.5), y, w, h)
 
@@ -66,7 +66,7 @@ class PersonTracker:
         hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV) # Konvertiere zu HSV-Farbraum
         mask = cv2.threshold(sub_roi, 127, 255, cv2.THRESH_BINARY)[1] # Binäre Maske
         hist = cv2.calcHist([hsv], [0, 1], mask, [50, 60], [0, 180, 0, 256]) # Berechne Histogramm
-        cv2.normalize(hist, hist)  # Normalisiere das Histogramm
+        cv2.normalize(hist, hist)  # Normalisiert das Histogramm
         return hist
 
     # Berechnet die Kostenmatrix für Zuordnungen zwischen Tracks und Erkennungen
@@ -87,7 +87,7 @@ class PersonTracker:
     # Aktualisiert die Tracks
     def update(self, detections : list, image, sub):
         if len(self.tracks) == 0:
-            # Create new tracks for all detections
+            # Neu Tracks für alle Detektionen
             for det in detections:
                 hist = self.calculate_histogram(image, sub, det)
                 self.tracks.append(Track(self.next_id, det, hist, self.colors[self.next_id % 100]))
@@ -99,10 +99,10 @@ class PersonTracker:
 
         # Berechne Kostenmatrix
         cost_matrix_hist = self.calculate_cost_matrix(self.tracks, detections, image, sub)
-        # Löse das Zuordnungsproblem
+        # Hungarian Method
         track_indices, det_indices = linear_sum_assignment(cost_matrix_hist)
 
-        # Update matched tracks
+        # Tracks updaten die gematcht wurden
         unmatched_tracks = set(range(len(self.tracks)))  # Nicht zugeordnete Tracks
         unmatched_detections = set(range(len(detections))) # Nicht zugeordnete Erkennungen
 
@@ -120,13 +120,13 @@ class PersonTracker:
             unmatched_tracks.discard(t_idx)
             unmatched_detections.discard(d_idx)
 
-        # Behandle nicht zugeordnete Tracks (z. B. altern oder entfernen)
+        # Lässt nicht zugeordnete Tracks altern und predicten
         for t_idx in unmatched_tracks:
             self.tracks[t_idx].age += 1
             self.tracks[t_idx].predict()
 
-        # alte Tracks entfernen
-        self.tracks = [t for t in self.tracks if t.age < 80]
+        # zu alte Tracks entfernen
+        self.tracks = [t for t in self.tracks if t.age < 60]
 
         # Erstelle neue Tracks für nicht zugeordnete Erkennungen
         for d_idx in unmatched_detections:
@@ -137,7 +137,7 @@ class PersonTracker:
                     skip = True
             if skip:
                 continue
-            if bbox[2] * bbox[3] > 15000 and bbox[3] / bbox[2] > 2.25: # Größenverhältnis prüfen
+            if bbox[2] * bbox[3] > 15000 and bbox[3] / bbox[2] > 2.25: # Größe / Größenverhältnis prüfen
                 hist = self.calculate_histogram(image, sub, bbox)
                 self.tracks.append(Track(self.next_id, bbox, hist, self.colors[self.next_id % 100]))
                 self.next_id += 1
@@ -145,9 +145,9 @@ class PersonTracker:
         return self.tracks
 
     # Zeichne die Tracks auf das Bild
-    def draw_tracks(self, image):
+    def draw_tracks(self, image, colors):
         for track in self.tracks:
             x, y, w, h = track.bbox
-            color = [int(c) for c in track.color]
+            color = colors[track.track_id % len(colors)]
             cv2.rectangle(image, (x, y), (x+w, y+h), color, 2)
             cv2.putText(image, f'ID: {track.track_id}', (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)

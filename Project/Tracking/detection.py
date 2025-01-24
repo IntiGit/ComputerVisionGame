@@ -110,7 +110,7 @@ def split_wide_contours(contours, max_width):
     return new_contours, len(new_contours) > len(contours)
 
 
-# Konturen filtern indem die Anzahl der weißen Pixel, welche Sie bedecken genutzt wird
+# Konturen filtern indem die Anzahl der weißen Pixel zu gering ist
 def filter_contours_by_white_area(contours, fgmask, min_white_pixels=10000):
     filtered_contours = []
 
@@ -134,10 +134,8 @@ def detectPerson(frame, subtractor):
     for _ in range(5):
         fgmask = cv2.erode(fgmask, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
 
-
     # Teil des unteren Bildes ignorieren
     fgmask[-(fgmask.shape[0] // 10):, :] = 0
-
 
     # Konturen finden
     contours, _ = cv2.findContours(fgmask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -146,6 +144,7 @@ def detectPerson(frame, subtractor):
 
     candidates = []
     for cnt in contours:
+        # Konturen trennen mit schwacher Verbindung
         box = minimal_covering_rectangles(cnt, frame)
         if box is not None:
             candidates.append(box)

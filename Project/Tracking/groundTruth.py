@@ -7,7 +7,7 @@ model = YOLO('yolov8n.pt')
 
 # Video-Dateipfade
 root_path = "C:/Users/Timo/Desktop/CV Videos/edited/MOT/"
-video = "_"
+video = "Many_2"
 video_path = root_path + video + ".mp4"
 
 # Video einlesen
@@ -29,7 +29,6 @@ print(f"Auflösung: {frame_width}x{frame_height}, FPS: {fps}, Frames: {total_fra
 # Groundtruth-Daten speichern
 groundtruth = []
 
-# Frame-Iterator
 frame_id = 0
 curID = 0
 while True:
@@ -37,10 +36,10 @@ while True:
     if not ret:
         break
 
-    # YOLO-Inferenz auf dem aktuellen Frame
+    # YOLO auf dem aktuellen Frame
     results = model.predict(frame, conf=0.5, verbose=False)
 
-    # Daten für das aktuelle Frame sammeln
+    # Daten für den aktuellen Frame sammeln
     frame_data = {
         "frame_id": frame_id,
         "objects": []
@@ -48,7 +47,7 @@ while True:
     nextID = 0
     # Bounding Boxen und IDs speichern
     for result in results[0].boxes.data.tolist():
-        # Bounding Box und Klasseninformationen extrahieren
+        # Bounding Box holen
         x1, y1, x2, y2, confidence, class_id = result
         if class_id != 0:
             continue
@@ -61,7 +60,7 @@ while True:
         frame_data["objects"].append(object_data)
         nextID += 1
 
-        # Bounding Box auf Frame zeichnen (optional für Visualisierung)
+        # Bounding Box auf Frame zeichnen
         cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
         cv2.putText(frame, f"ID: {object_data['id']}, XY: {object_data['bbox'][0]} {object_data['bbox'][1]} \nFrame{frame_id}", (int(x1), int(y1) - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
@@ -70,15 +69,13 @@ while True:
     if len(frame_data["objects"]) != 0:
         groundtruth.append(frame_data)
 
-    # Frame anzeigen (optional)
+    # Frame anzeigen
     cv2.imshow("Frame", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-    # Frame-Zähler erhöhen
     frame_id += 1
 
-# Video und Fenster schließen
 cap.release()
 cv2.destroyAllWindows()
 
