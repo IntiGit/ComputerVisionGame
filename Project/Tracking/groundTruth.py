@@ -1,64 +1,87 @@
-from ultralytics import YOLO
 import cv2
-import csv
+import json
+from ultralytics import YOLO
 
-# Lade das Modell
+# YOLO-Modell laden
 model = YOLO('yolov8n.pt')
-root_path = "_"
-video = "Brick_1"
+
+# Video-Dateipfade
+root_path = "C:/Users/Timo/Desktop/CV Videos/edited/MOT/"
+video = "Many_2"
 video_path = root_path + video + ".mp4"
 
+# Video einlesen
 cap = cv2.VideoCapture(video_path)
 
-# Öffnen die CSV-Datei
-with open('./Truths/groundTruth_' + video + '.csv', 'w', newline='') as csvfile:
+if not cap.isOpened():
+    print("Fehler: Video konnte nicht geöffnet werden.")
+    exit()
 
-    fieldnames = ['FrameNr', 'x', 'y', 'w', 'h']
-    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+# Video-Eigenschaften
+frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fps = int(cap.get(cv2.CAP_PROP_FPS))
+total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    writer.writeheader()  # Schreibe die Headerzeile
+print(f"Video: {video_path}")
+print(f"Auflösung: {frame_width}x{frame_height}, FPS: {fps}, Frames: {total_frames}")
 
-    frame_number = 0  # Frame-Nummer
+# Groundtruth-Daten speichern
+groundtruth = []
 
-    while True:
-        ret, frame = cap.read()
+frame_id = 0
+curID = 0
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
 
-        if not ret:
-            break
+    # YOLO auf dem aktuellen Frame
+    results = model.predict(frame, conf=0.5, verbose=False)
 
-        frame_number += 1
+    # Daten für den aktuellen Frame sammeln
+    frame_data = {
+        "frame_id": frame_id,
+        "objects": []
+    }
+    nextID = 0
+    # Bounding Boxen und IDs speichern
+    for result in results[0].boxes.data.tolist():
+        # Bounding Box holen
+        x1, y1, x2, y2, confidence, class_id = result
+        if class_id != 0:
+            continue
+        object_data = {
+            "id": len(frame_data["objects"]),  # Lokale ID innerhalb des Frames
+            "class_id": int(class_id),
+            "confidence": float(confidence),
+            "bbox": [int(x1), int(y1), int(x2), int(y2)]
+        }
+        frame_data["objects"].append(object_data)
+        nextID += 1
 
-        results = model.track(frame, persist=True)
+        # Bounding Box auf Frame zeichnen
+        cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
+        cv2.putText(frame, f"ID: {object_data['id']}, XY: {object_data['bbox'][0]} {object_data['bbox'][1]} \nFrame{frame_id}", (int(x1), int(y1) - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
-        detections = results[0].boxes
-        detected = False
+    # Groundtruth-Liste um Frame-Daten erweitern
+    if len(frame_data["objects"]) != 0:
+        groundtruth.append(frame_data)
 
-        for det in detections:
-            if det.cls == 0:  # Nur Personen finden
-                x1, y1, x2, y2 = det.xyxy[0].tolist()
-                x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
+    # Frame anzeigen
+    cv2.imshow("Frame", frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
-                # Breite und Höhe der Bounding Box
-                w = x2 - x1
-                h = y2 - y1
-
-                # Zeichnen die Bounding Box
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
-
-                # Speichern der Bounding Box in der CSV-Datei
-                writer.writerow({'FrameNr': frame_number, 'x': x1, 'y': y1, 'w': w, 'h': h})
-                detected = True
-                break
-
-        if not detected:
-            # Wenn keine Bounding Box gefunden wurde, speichere (0,0,0,0)
-            writer.writerow({'FrameNr': frame_number, 'x': 0, 'y': 0, 'w': 0, 'h': 0})
-
-        cv2.imshow("Frame", frame)
-
-        # Beende bei Drücken von 'q'
-        if cv2.waitKey(25) & 0xFF == ord('q'):
-            break
+    frame_id += 1
 
 cap.release()
 cv2.destroyAllWindows()
+
+# Groundtruth-Daten als JSON speichern
+output_path = f"./Truths/groundtruth_{video}.json"
+with open(output_path, "w") as f:
+    json.dump(groundtruth, f, indent=4)
+
+print(f"Groundtruth wurde erfolgreich gespeichert: {output_path}")
